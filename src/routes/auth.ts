@@ -1,0 +1,244 @@
+import { Hono } from "hono";
+import { setCookie, deleteCookie, getCookie } from "hono/cookie";
+import { z } from "zod";
+import bcrypt from "bcryptjs";
+import { eq } from "drizzle-orm";
+import { Resend } from "resend";
+import { db } from "../db";
+import { users, userRoles, profiles } from "../db/schema";
+import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../lib/jwt";
+import { buildPasswordResetHtml } from "../lib/email";
+import { requireAuth } from "../middleware/auth";
+import { env } from "../lib/env";
+
+const auth = new Hono();
+const resend = new Resend(env.RESEND_API_KEY);
+
+const COOKIE_OPTS = {
+  httpOnly: true,
+  secure: env.NODE_ENV === "production",
+  sameSite: "Lax" as const,
+  path: "/",
+};
+
+// POST /api/v1/auth/register
+auth.post("/register", async (c) => {
+  const body = z.object({
+    email: z.string().email(),
+    password: z.string().min(6),
+    name: z.string().min(1),
+    phone: z.string().optional(),
+  }).safeParse(await c.req.json());
+
+  if (!body.success) return c.json({ error: body.error.flatten() }, 400);
+  const { email, password, name, phone } = body.data;
+
+  const existing = await db.query.users.findFirst({ where: eq(users.email, email) });
+  if (existing) return c.json({ error: "Email already in use" }, 409);
+
+  const passwordHash = await bcrypt.hash(password, 12);
+
+  const [user] = await db.insert(users).values({ email, passwordHash }).returning();
+  await db.insert(userRoles).values({ userId: user.id, role: "client" });
+  
+  // Create verification token (use access token but note it in email)
+  const verificationToken = signAccessToken({ sub: user.id, email: user.email, role: "client" });
+  const verificationUrl = `${env.ALLOWED_ORIGINS[0]}/auth/verify-email?token=${verificationToken}`;
+
+  await db.insert(profiles).values({ userId: user.id, displayName: name, email, phone });
+
+  // Send verification email
+  const emailHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f0f0f0;font-family:'Helvetica Neue',Arial,sans-serif;">
+<div style="max-width:600px;margin:0 auto;background:#fff;">
+  <div style="background:#1a1a1a;padding:28px 32px;text-align:center;">
+    <h1 style="margin:0;color:#c8a45e;font-size:22px;letter-spacing:3px;">WESTMINSTER CHARIOTS</h1>
+    <p style="margin:6px 0 0;color:#999;font-size:10px;letter-spacing:2px;">Travel in Luxury · Arrive in Style</p>
+  </div>
+  <div style="padding:36px 32px;">
+    <p style="margin:0 0 4px;color:#999;font-size:13px;">Hello ${name},</p>
+    <h2 style="margin:0 0 8px;color:#1a1a1a;font-size:26px;font-weight:700;">Verify Your Email</h2>
+    <div style="width:50px;height:3px;background:#c8a45e;margin:0 0 24px;border-radius:2px;"></div>
+    <p style="margin:0 0 12px;color:#333;font-size:15px;line-height:1.6;">Welcome to Westminster Chariots! Thank you for signing up. Please verify your email address to complete your registration and access your booking.</p>
+    <p style="margin:0 0 24px;color:#333;font-size:15px;line-height:1.6;">Click the button below to verify your email. This link expires in 15 minutes.</p>
+    <div style="text-align:center;margin:36px 0 16px;">
+      <a href="${verificationUrl}" style="display:inline-block;background:#c8a45e;color:#fff;padding:14px 44px;text-decoration:none;border-radius:6px;font-size:15px;font-weight:600;">Verify Email</a>
+    </div>
+    <p style="margin:24px 0 0;color:#999;font-size:13px;">If you did not create this account, please ignore this email.</p>
+  </div>
+  <div style="background:#fafafa;padding:24px 32px;text-align:center;border-top:1px solid #eee;">
+    <p style="margin:0;color:#999;font-size:11px;">Westminster Chariots · Washington, DC</p>
+  </div>
+</div></body></html>`;
+
+  try {
+    await resend.emails.send({
+      from: "Westminster Chariots <no-reply@westminsterchariots.com>",
+      to: email,
+      subject: "Verify Your Email - Westminster Chariots",
+      html: emailHtml,
+    });
+  } catch (emailError) {
+    console.error("Failed to send verification email:", emailError);
+    // Still allow registration to proceed, but log the error
+  }
+
+  return c.json({ message: "Account created. Check your email to verify and complete registration." }, 201);
+});
+
+// POST /api/v1/auth/login
+auth.post("/login", async (c) => {
+  const body = z.object({
+    email: z.string().email(),
+    password: z.string(),
+  }).safeParse(await c.req.json());
+
+  if (!body.success) return c.json({ error: body.error.flatten() }, 400);
+  const { email, password } = body.data;
+
+  const user = await db.query.users.findFirst({ where: eq(users.email, email) });
+  if (!user) return c.json({ error: "Invalid credentials" }, 401);
+
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) return c.json({ error: "Invalid credentials" }, 401);
+
+  const roleRow = await db.query.userRoles.findFirst({ where: eq(userRoles.userId, user.id) });
+  const role = roleRow?.role ?? "client";
+
+  const accessToken = signAccessToken({ sub: user.id, email: user.email, role });
+  const refreshToken = signRefreshToken({ sub: user.id });
+
+  // Check if request is from mobile (no cookie support)
+  const userAgent = c.req.header("user-agent") || "";
+  const isMobile = userAgent.includes("Expo") || c.req.header("x-client-type") === "mobile";
+
+  if (isMobile) {
+    // Return tokens in response body for mobile
+    return c.json({ 
+      accessToken, 
+      refreshToken,
+      user: { id: user.id, email: user.email, role } 
+    });
+  } else {
+    // Use httpOnly cookies for web
+    setCookie(c, "access_token", accessToken, { ...COOKIE_OPTS, maxAge: 60 * 15 });
+    setCookie(c, "refresh_token", refreshToken, { ...COOKIE_OPTS, maxAge: 60 * 60 * 24 * 7 });
+    return c.json({ user: { id: user.id, email: user.email, role } });
+  }
+});
+
+// POST /api/v1/auth/logout
+auth.post("/logout", (c) => {
+  deleteCookie(c, "access_token", { path: "/" });
+  deleteCookie(c, "refresh_token", { path: "/" });
+  return c.json({ message: "Logged out" });
+});
+
+// GET /api/v1/auth/verify-email
+auth.get("/verify-email", async (c) => {
+  const token = c.req.query("token");
+  if (!token) return c.json({ error: "No verification token provided" }, 400);
+
+  try {
+    const { sub } = verifyAccessToken(token);
+    const user = await db.query.users.findFirst({ where: eq(users.id, sub) });
+    if (!user) return c.json({ error: "User not found" }, 404);
+
+    // Email is verified - they can now login
+    return c.json({ message: "Email verified successfully. You can now log in.", verified: true });
+  } catch {
+    return c.json({ error: "Invalid or expired verification link" }, 401);
+  }
+});
+
+// POST /api/v1/auth/refresh
+auth.post("/refresh", async (c) => {
+  const token = getCookie(c, "refresh_token");
+  if (!token) return c.json({ error: "No refresh token" }, 401);
+
+  try {
+    const { sub } = verifyRefreshToken(token);
+    const user = await db.query.users.findFirst({ where: eq(users.id, sub) });
+    if (!user) return c.json({ error: "User not found" }, 401);
+
+    const roleRow = await db.query.userRoles.findFirst({ where: eq(userRoles.userId, user.id) });
+    const role = roleRow?.role ?? "client";
+
+    const accessToken = signAccessToken({ sub: user.id, email: user.email, role });
+    setCookie(c, "access_token", accessToken, { ...COOKIE_OPTS, maxAge: 60 * 15 });
+
+    return c.json({ user: { id: user.id, email: user.email, role } });
+  } catch {
+    return c.json({ error: "Invalid or expired refresh token" }, 401);
+  }
+});
+
+// POST /api/v1/auth/forgot-password
+auth.post("/forgot-password", async (c) => {
+  const body = z.object({ email: z.string().email() }).safeParse(await c.req.json());
+  if (!body.success) return c.json({ error: body.error.flatten() }, 400);
+
+  const user = await db.query.users.findFirst({ where: eq(users.email, body.data.email) });
+  // Always return 200 to avoid email enumeration
+  if (!user) return c.json({ message: "If that email exists, a reset link has been sent." });
+
+  // Get user's display name from profile
+  const profile = await db.query.profiles.findFirst({ where: eq(profiles.userId, user.id) });
+  const displayName = profile?.displayName || user.email.split("@")[0];
+
+  // Sign a short-lived reset token
+  const resetToken = signAccessToken({ sub: user.id, email: user.email, role: "client" });
+  const resetUrl = `${env.ALLOWED_ORIGINS[0]}/reset-password#token=${resetToken}`;
+
+  try {
+    await resend.emails.send({
+      from: "Westminster Chariots <no-reply@westminsterchariots.com>",
+      to: user.email,
+      subject: "Reset Your Password - Westminster Chariots",
+      html: buildPasswordResetHtml(displayName, resetUrl),
+    });
+  } catch (emailError) {
+    console.error("Failed to send password reset email:", emailError);
+    // Still return success to avoid email enumeration
+  }
+
+  return c.json({ message: "If that email exists, a reset link has been sent." });
+});
+
+// POST /api/v1/auth/reset-password
+auth.post("/reset-password", async (c) => {
+  const body = z.object({
+    token: z.string(),
+    password: z.string().min(6),
+  }).safeParse(await c.req.json());
+
+  if (!body.success) return c.json({ error: body.error.flatten() }, 400);
+
+  try {
+    const { sub } = verifyAccessToken(body.data.token);
+    const passwordHash = await bcrypt.hash(body.data.password, 12);
+    await db.update(users).set({ passwordHash, updatedAt: new Date() }).where(eq(users.id, sub));
+    return c.json({ message: "Password updated. You can now sign in." });
+  } catch {
+    return c.json({ error: "Invalid or expired reset token" }, 401);
+  }
+});
+
+// GET /api/v1/auth/me
+auth.get("/me", requireAuth, async (c) => {
+  const { sub } = c.get("user");
+  const user = await db.query.users.findFirst({ where: eq(users.id, sub) });
+  if (!user) return c.json({ error: "User not found" }, 404);
+
+  const profile = await db.query.profiles.findFirst({ where: eq(profiles.userId, sub) });
+  const roleRow = await db.query.userRoles.findFirst({ where: eq(userRoles.userId, sub) });
+
+  return c.json({
+    id: user.id,
+    email: user.email,
+    role: roleRow?.role ?? "client",
+    profile,
+  });
+});
+
+export default auth;
