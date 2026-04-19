@@ -34,7 +34,12 @@ auth.post("/register", async (c) => {
   const { email, password, name, phone } = body.data;
 
   const existing = await db.query.users.findFirst({ where: eq(users.email, email) });
-  if (existing) return c.json({ error: "Email already in use" }, 409);
+  if (existing) {
+    return c.json({ 
+      error: "This email is already registered. Please log in instead.",
+      code: "EMAIL_EXISTS"
+    }, 409);
+  }
 
   const passwordHash = await bcrypt.hash(password, 12);
 
