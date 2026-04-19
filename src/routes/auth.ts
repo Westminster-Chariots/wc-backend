@@ -113,23 +113,12 @@ auth.post("/login", async (c) => {
   const accessToken = signAccessToken({ sub: user.id, email: user.email, role });
   const refreshToken = signRefreshToken({ sub: user.id });
 
-  // Check if request is from mobile (no cookie support)
-  const userAgent = c.req.header("user-agent") || "";
-  const isMobile = userAgent.includes("Expo") || c.req.header("x-client-type") === "mobile";
-
-  if (isMobile) {
-    // Return tokens in response body for mobile
-    return c.json({ 
-      accessToken, 
-      refreshToken,
-      user: { id: user.id, email: user.email, role } 
-    });
-  } else {
-    // Use httpOnly cookies for web
-    setCookie(c, "access_token", accessToken, { ...COOKIE_OPTS, maxAge: 60 * 15 });
-    setCookie(c, "refresh_token", refreshToken, { ...COOKIE_OPTS, maxAge: 60 * 60 * 24 * 7 });
-    return c.json({ message: "Login successful", user: { id: user.id, email: user.email, role } });
-  }
+  // Always return tokens in response body (works for both web and mobile)
+  return c.json({ 
+    accessToken, 
+    refreshToken,
+    user: { id: user.id, email: user.email, role } 
+  });
 });
 
 // POST /api/v1/auth/logout
