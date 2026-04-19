@@ -27,6 +27,7 @@
     "jsonwebtoken": "^9.0.3",
     "resend": "^6.9.4",
     "stripe": "^20.4.1",
+    "tsx": "^4.21.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -34,7 +35,6 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.5.0",
     "drizzle-kit": "^0.31.10",
-    "tsx": "^4.21.0",
     "typescript": "^6.0.2"
   }
 }
