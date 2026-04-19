@@ -16,8 +16,8 @@ const resend = new Resend(env.RESEND_API_KEY);
 
 const COOKIE_OPTS = {
   httpOnly: true,
-  secure: true, // Always use secure in production
-  sameSite: "None" as const, // Allow cross-origin cookies
+  secure: env.NODE_ENV === "production",
+  sameSite: "Lax" as const,
   path: "/",
 };
 
