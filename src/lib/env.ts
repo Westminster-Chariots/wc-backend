@@ -15,5 +15,5 @@ export const env = {
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET ?? "",
   PORT: Number(process.env.PORT ?? 3001),
   NODE_ENV: process.env.NODE_ENV ?? "development",
-  ALLOWED_ORIGINS: (process.env.ALLOWED_ORIGINS ?? "http://localhost:3000").split(","),
+  ALLOWED_ORIGINS: (process.env.ALLOWED_ORIGINS ?? "https://westminsterchariots.vercel.app/").split(","),
 };
