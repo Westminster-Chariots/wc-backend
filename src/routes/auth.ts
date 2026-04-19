@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { Resend } from "resend";
 import { db } from "../db";
 import { users, userRoles, profiles } from "../db/schema";
-import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../lib/jwt";
+import { signAccessToken, signRefreshToken, verifyRefreshToken, verifyAccessToken } from "../lib/jwt";
 import { buildPasswordResetHtml } from "../lib/email";
 import { requireAuth } from "../middleware/auth";
 import { env } from "../lib/env";
@@ -16,8 +16,8 @@ const resend = new Resend(env.RESEND_API_KEY);
 
 const COOKIE_OPTS = {
   httpOnly: true,
-  secure: env.NODE_ENV === "production",
-  sameSite: "Lax" as const,
+  secure: true, // Always use secure in production
+  sameSite: "None" as const, // Allow cross-origin cookies
   path: "/",
 };
 
@@ -123,7 +123,7 @@ auth.post("/login", async (c) => {
     // Use httpOnly cookies for web
     setCookie(c, "access_token", accessToken, { ...COOKIE_OPTS, maxAge: 60 * 15 });
     setCookie(c, "refresh_token", refreshToken, { ...COOKIE_OPTS, maxAge: 60 * 60 * 24 * 7 });
-    return c.json({ user: { id: user.id, email: user.email, role } });
+    return c.json({ message: "Login successful", user: { id: user.id, email: user.email, role } });
   }
 });
 

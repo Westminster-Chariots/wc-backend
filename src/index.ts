@@ -22,7 +22,7 @@ const app = new Hono();
 
 app.use(logger());
 app.use(
-  "/api/*",
+  "*",
   cors({
     origin: (origin) => {
       const allowedOrigins = env.ALLOWED_ORIGINS;
@@ -31,13 +31,14 @@ app.use(
       // Allow if origin is in the list
       if (allowedOrigins.includes(origin || '')) return origin;
       // Allow requests with no origin (like mobile apps or Postman)
-      if (!origin) return allowedOrigins[0];
+      if (!origin) return true;
       // Default to first allowed origin
       return allowedOrigins[0];
     },
     credentials: true,
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization", "X-Request-ID", "x-client-type"],
+    exposeHeaders: ["Set-Cookie"],
   })
 );
 
