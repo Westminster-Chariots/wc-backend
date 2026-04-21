@@ -235,4 +235,43 @@ auth.get("/me", requireAuth, async (c) => {
   });
 });
 
+// PATCH /api/v1/auth/profile
+auth.patch("/profile", requireAuth, async (c) => {
+  const { sub } = c.get("user");
+  
+  const body = z.object({
+    displayName: z.string().min(1).optional(),
+    phone: z.string().optional(),
+  }).safeParse(await c.req.json());
+
+  if (!body.success) return c.json({ error: body.error.flatten() }, 400);
+
+  const updateData: any = { updatedAt: new Date() };
+  if (body.data.displayName !== undefined) updateData.displayName = body.data.displayName;
+  if (body.data.phone !== undefined) updateData.phone = body.data.phone;
+
+  await db.update(profiles).set(updateData).where(eq(profiles.userId, sub));
+
+  return c.json({ message: "Profile updated successfully" });
+});
+
+// POST /api/v1/auth/push-token
+auth.post("/push-token", requireAuth, async (c) => {
+  const { sub } = c.get("user");
+  
+  const body = z.object({
+    token: z.string(),
+  }).safeParse(await c.req.json());
+
+  if (!body.success) return c.json({ error: body.error.flatten() }, 400);
+
+  // Store push token in user record
+  await db.update(users).set({ 
+    pushToken: body.data.token,
+    updatedAt: new Date() 
+  }).where(eq(users.id, sub));
+
+  return c.json({ message: "Push token saved successfully" });
+});
+
 export default auth;

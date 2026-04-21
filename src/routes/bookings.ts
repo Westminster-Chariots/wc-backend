@@ -432,4 +432,63 @@ router.post("/:id/send-manifest", requireAdmin, async (c) => {
   return c.json({ message: "Manifest sent to driver" });
 });
 
+// GET /api/v1/bookings/:id/driver — get driver info for booking
+router.get("/:id/driver", requireAuth, async (c) => {
+  const user = c.get("user");
+  const booking = await db.query.bookings.findFirst({ where: eq(bookings.id, c.req.param("id")) });
+  
+  if (!booking) return c.json({ error: "Booking not found" }, 404);
+  if (user.role !== "admin" && booking.userId !== user.sub) {
+    return c.json({ error: "Forbidden" }, 403);
+  }
+  if (!booking.driverId) {
+    return c.json({ error: "No driver assigned yet" }, 404);
+  }
+
+  const driver = await db.query.drivers.findFirst({ where: eq(drivers.id, booking.driverId) });
+  if (!driver) return c.json({ error: "Driver not found" }, 404);
+
+  // Return driver info with vehicle details from booking
+  return c.json({
+    id: driver.id,
+    name: driver.name,
+    phone: driver.phone,
+    photo: null, // TODO: Add photo field to drivers table
+    rating: 4.8, // TODO: Add rating system
+    vehicle: {
+      make: booking.vehicleMake || "Mercedes-Benz",
+      model: booking.vehicleModel || "S-Class",
+      color: booking.vehicleColor || "Black",
+      licensePlate: booking.licensePlate || "N/A",
+    },
+    currentLocation: driver.currentLocation || null,
+  });
+});
+
+// PATCH /api/v1/bookings/:id/cancel — client can cancel their own booking
+router.patch("/:id/cancel", requireAuth, async (c) => {
+  const user = c.get("user");
+  const booking = await db.query.bookings.findFirst({ where: eq(bookings.id, c.req.param("id")) });
+  
+  if (!booking) return c.json({ error: "Booking not found" }, 404);
+  if (user.role !== "admin" && booking.userId !== user.sub) {
+    return c.json({ error: "Forbidden" }, 403);
+  }
+  if (!["pending", "assigned"].includes(booking.status)) {
+    return c.json({ error: "Cannot cancel booking in current status" }, 400);
+  }
+
+  const [updated] = await db
+    .update(bookings)
+    .set({ status: "cancelled", updatedAt: new Date() })
+    .where(eq(bookings.id, c.req.param("id")))
+    .returning();
+
+  await writeAudit("booking_cancelled", updated.id, user.sub, {
+    reservationNumber: updated.reservationNumber,
+  });
+
+  return c.json(updated);
+});
+
 export default router;
