@@ -22,14 +22,14 @@ const VehicleSchema = z.object({
   notes: z.string().nullable().optional(),
 });
 
-// GET /api/v1/fleet — any authenticated user
-router.get("/", requireAuth, async (c) => {
+// GET /api/v1/fleet — public (no auth required)
+router.get("/", async (c) => {
   const rows = await db.query.fleet.findMany({ orderBy: [asc(fleet.make), asc(fleet.model)] });
   return c.json(rows);
 });
 
-// GET /api/v1/fleet/:id
-router.get("/:id", requireAuth, async (c) => {
+// GET /api/v1/fleet/:id — public
+router.get("/:id", async (c) => {
   const row = await db.query.fleet.findFirst({ where: eq(fleet.id, c.req.param("id")) });
   if (!row) return c.json({ error: "Not found" }, 404);
   return c.json(row);
