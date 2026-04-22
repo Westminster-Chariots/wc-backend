@@ -7,6 +7,7 @@ import { bookings, auditLog, drivers } from "../db/schema";
 import { requireAuth, requireAdmin } from "../middleware/auth";
 import { buildPaymentLinkEmail, buildManifestEmail, buildCancellationEmail } from "../lib/email-templates";
 import { env } from "../lib/env";
+import { notifyBookingUpdate } from "../lib/pusher";
 import type { JwtPayload } from "../lib/jwt";
 
 const resend = new Resend(env.RESEND_API_KEY);
@@ -247,6 +248,15 @@ router.patch("/:id/status", requireAdmin, async (c) => {
     to: body.data.status,
   });
 
+  // Send Pusher notification to client
+  await notifyBookingUpdate(
+    updated.userId,
+    updated.id,
+    updated.status,
+    updated.driverId ?? undefined,
+    undefined // Driver name will be fetched if needed
+  );
+
   return c.json(updated);
 });
 
@@ -278,6 +288,18 @@ router.patch("/:id/assign", requireAdmin, async (c) => {
     user.sub,
     { reservationNumber: updated.reservationNumber, driverId: body.data.driverId }
   );
+
+  // Send Pusher notification if driver was assigned
+  if (body.data.driverId && newStatus === "assigned") {
+    const driver = await db.query.drivers.findFirst({ where: eq(drivers.id, body.data.driverId) });
+    await notifyBookingUpdate(
+      updated.userId,
+      updated.id,
+      updated.status,
+      updated.driverId ?? undefined,
+      driver?.name
+    );
+  }
 
   return c.json(updated);
 });
@@ -487,6 +509,13 @@ router.patch("/:id/cancel", requireAuth, async (c) => {
   await writeAudit("booking_cancelled", updated.id, user.sub, {
     reservationNumber: updated.reservationNumber,
   });
+
+  // Send Pusher notification
+  await notifyBookingUpdate(
+    updated.userId,
+    updated.id,
+    updated.status
+  );
 
   return c.json(updated);
 });
