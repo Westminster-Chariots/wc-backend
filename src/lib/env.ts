@@ -24,5 +24,5 @@ export const env = {
   GOOGLE_ANDROID_CLIENT_ID: process.env.GOOGLE_ANDROID_CLIENT_ID!,
   PORT: Number(process.env.PORT ?? 3001),
   NODE_ENV: process.env.NODE_ENV ?? "development",
-  ALLOWED_ORIGINS: (process.env.ALLOWED_ORIGINS ?? "https://wc-version2.vercel.app/").split(","),
+  ALLOWED_ORIGINS: (process.env.ALLOWED_ORIGINS ?? "http://localhost:3000").split(","),
 };

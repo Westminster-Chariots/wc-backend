@@ -35,7 +35,7 @@ PORT=3001
 NODE_ENV=production
 
 # CORS - IMPORTANT: Add your Vercel domain
-ALLOWED_ORIGINS=https://wc-version2.vercel.app,https://wc-backend-ayx0.onrender.com
+ALLOWED_ORIGINS=https://wc-version2.vercel.app,http://localhost:3001
 
 # Cloudinary
 CLOUDINARY_CLOUD_NAME=dqnulkx1a
@@ -54,7 +54,7 @@ CLOUDINARY_API_SECRET=uPsHGfJ4fAmv1oqb5uz_F7I1HBk
 Set these in your Vercel project → Settings → Environment Variables:
 
 ```env
-NEXT_PUBLIC_API_URL=https://wc-backend-ayx0.onrender.com
+NEXT_PUBLIC_API_URL=http://localhost:3001
 NEXT_PUBLIC_PUSHER_KEY=fa1c59baf7529c654592
 NEXT_PUBLIC_PUSHER_CLUSTER=mt1
 NEXT_PUBLIC_GOOGLE_MAPS_KEY=AIzaSyA22awt3-aPimxwxknDi53fXs6lqmJsc7E

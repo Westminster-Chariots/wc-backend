@@ -160,7 +160,7 @@ npm run db:push
 
 ### Test Profile Update
 ```bash
-curl -X PATCH https://wc-backend-ayx0.onrender.com/api/v1/auth/profile \
+curl -X PATCH http://localhost:3001/api/v1/auth/profile \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"displayName":"Test User","phone":"+1 (555) 123-4567"}'
@@ -168,7 +168,7 @@ curl -X PATCH https://wc-backend-ayx0.onrender.com/api/v1/auth/profile \
 
 ### Test Push Token
 ```bash
-curl -X POST https://wc-backend-ayx0.onrender.com/api/v1/auth/push-token \
+curl -X POST http://localhost:3001/api/v1/auth/push-token \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"token":"ExponentPushToken[test123]"}'
@@ -176,13 +176,13 @@ curl -X POST https://wc-backend-ayx0.onrender.com/api/v1/auth/push-token \
 
 ### Test Driver Info
 ```bash
-curl -X GET https://wc-backend-ayx0.onrender.com/api/v1/bookings/BOOKING_ID/driver \
+curl -X GET http://localhost:3001/api/v1/bookings/BOOKING_ID/driver \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
 ### Test Cancel Booking
 ```bash
-curl -X PATCH https://wc-backend-ayx0.onrender.com/api/v1/bookings/BOOKING_ID/cancel \
+curl -X PATCH http://localhost:3001/api/v1/bookings/BOOKING_ID/cancel \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
