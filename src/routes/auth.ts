@@ -115,7 +115,6 @@ auth.post("/login", async (c) => {
   const accessToken = signAccessToken({ sub: user.id, email: user.email, role });
   const refreshToken = signRefreshToken({ sub: user.id });
 
-  // Always return tokens in response body (works for both web and mobile)
   return c.json({ 
     accessToken, 
     refreshToken,
@@ -149,7 +148,8 @@ auth.get("/verify-email", async (c) => {
 
 // POST /api/v1/auth/refresh
 auth.post("/refresh", async (c) => {
-  const token = getCookie(c, "refresh_token");
+  const body = await c.req.json().catch(() => ({}));
+  const token = getCookie(c, "refresh_token") ?? body.refreshToken ?? c.req.header("Authorization")?.replace("Bearer ", "");
   if (!token) return c.json({ error: "No refresh token" }, 401);
 
   try {
@@ -161,9 +161,12 @@ auth.post("/refresh", async (c) => {
     const role = roleRow?.role ?? "client";
 
     const accessToken = signAccessToken({ sub: user.id, email: user.email, role });
-    setCookie(c, "access_token", accessToken, { ...COOKIE_OPTS, maxAge: 60 * 15 });
+    const newRefreshToken = signRefreshToken({ sub: user.id });
 
-    return c.json({ user: { id: user.id, email: user.email, role } });
+    setCookie(c, "access_token", accessToken, { ...COOKIE_OPTS, maxAge: 60 * 60 * 24 * 7 });
+    setCookie(c, "refresh_token", newRefreshToken, { ...COOKIE_OPTS, maxAge: 60 * 60 * 24 * 30 });
+
+    return c.json({ accessToken, refreshToken: newRefreshToken, user: { id: user.id, email: user.email, role } });
   } catch {
     return c.json({ error: "Invalid or expired refresh token" }, 401);
   }
