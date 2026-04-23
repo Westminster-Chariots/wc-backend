@@ -106,5 +106,5 @@ export class GoogleAuthService {
 export const googleAuthService = new GoogleAuthService(
   env.GOOGLE_CLIENT_ID,
   env.GOOGLE_CLIENT_SECRET,
-  `http://localhost:${env.PORT}/api/v1/auth/google/callback`
+  `${env.ALLOWED_ORIGINS[0]}/api/v1/auth/google/callback`
 );
