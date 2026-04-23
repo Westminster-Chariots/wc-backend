@@ -392,6 +392,9 @@ auth.get("/google/callback", async (c) => {
     console.error("Google OAuth error:", error);
     return c.json({ error: "Authentication failed", detail: error instanceof Error ? error.message : String(error) }, 500);
   }
+});
+
+// POST /api/v1/auth/google/mobile
 auth.post("/google/mobile", async (c) => {
   const body = z.object({
     idToken: z.string(),
