@@ -71,7 +71,7 @@ Pusher notifications are sent when:
 
 ### 1. Test from Backend
 ```bash
-curl -X PATCH http://localhost:3001/api/v1/bookings/{booking_id}/status \
+curl -X PATCH https://wc-backend-ayx0.onrender.com/api/v1/bookings/{booking_id}/status \
   -H "Authorization: Bearer {admin_token}" \
   -H "Content-Type: application/json" \
   -d '{"status": "assigned"}'

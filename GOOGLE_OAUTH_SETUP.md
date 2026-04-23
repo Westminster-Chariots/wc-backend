@@ -97,13 +97,13 @@ Content-Type: application/json
 
 ### Test Web OAuth Flow:
 1. Start backend: `npm run dev`
-2. Visit: `http://localhost:3001/api/v1/auth/google`
+2. Visit: `https://wc-backend-ayx0.onrender.com/api/v1/auth/google`
 3. Complete Google login
 4. Should redirect to frontend with tokens
 
 ### Test Mobile OAuth Flow:
 ```bash
-curl -X POST http://localhost:3001/api/v1/auth/google/mobile \
+curl -X POST https://wc-backend-ayx0.onrender.com/api/v1/auth/google/mobile \
   -H "Content-Type: application/json" \
   -d '{
     "idToken": "your-google-id-token",
