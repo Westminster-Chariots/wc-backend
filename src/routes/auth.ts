@@ -286,10 +286,11 @@ auth.get("/google", (c) => {
   const authUrl = googleAuthService.getAuthUrl(state);
   
   // Store state in cookie for CSRF protection
+  // Must be SameSite=None because Google redirects back cross-site
   setCookie(c, "oauth_state", state, {
     httpOnly: true,
-    secure: env.NODE_ENV === "production",
-    sameSite: "Lax",
+    secure: true,
+    sameSite: "None",
     maxAge: 60 * 10, // 10 minutes
     path: "/",
   });
@@ -389,11 +390,8 @@ auth.get("/google/callback", async (c) => {
     return c.redirect(redirectUrl.toString());
   } catch (error) {
     console.error("Google OAuth error:", error);
-    return c.json({ error: "Authentication failed" }, 500);
+    return c.json({ error: "Authentication failed", detail: error instanceof Error ? error.message : String(error) }, 500);
   }
-});
-
-// POST /api/v1/auth/google/mobile
 auth.post("/google/mobile", async (c) => {
   const body = z.object({
     idToken: z.string(),

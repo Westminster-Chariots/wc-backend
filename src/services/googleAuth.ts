@@ -58,7 +58,8 @@ export class GoogleAuthService {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to exchange code for tokens");
+      const err = await response.json().catch(() => ({}));
+      throw new Error(`Failed to exchange code for tokens: ${JSON.stringify(err)}`);
     }
 
     return response.json();
