@@ -367,7 +367,7 @@ router.post("/:id/send-payment-link", requireAdmin, async (c) => {
   if (!booking) return c.json({ error: "Not found" }, 404);
 
   // TODO: Generate Stripe payment link
-  const paymentLink = `${env.ALLOWED_ORIGINS[0]}/book/checkout?booking=${booking.id}`;
+  const paymentLink = `${env.FRONTEND_URL}/book/checkout?booking=${booking.id}`;
 
   // Send email with payment link
   try {

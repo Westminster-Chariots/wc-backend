@@ -50,7 +50,7 @@ auth.post("/register", async (c) => {
   
   // Create verification token (use access token but note it in email)
   const verificationToken = signAccessToken({ sub: user.id, email: user.email, role: "client" });
-  const verificationUrl = `${env.ALLOWED_ORIGINS[0]}/auth/verify-email?token=${verificationToken}`;
+  const verificationUrl = `${env.FRONTEND_URL}/auth/verify-email?token=${verificationToken}`;
 
   await db.insert(profiles).values({ userId: user.id, displayName: name, email, phone });
 
@@ -184,7 +184,7 @@ auth.post("/forgot-password", async (c) => {
 
   // Sign a short-lived reset token
   const resetToken = signAccessToken({ sub: user.id, email: user.email, role: "client" });
-  const resetUrl = `${env.ALLOWED_ORIGINS[0]}/reset-password#token=${resetToken}`;
+  const resetUrl = `${env.FRONTEND_URL}/reset-password#token=${resetToken}`;
 
   try {
     await resend.emails.send({
@@ -382,12 +382,8 @@ auth.get("/google/callback", async (c) => {
       updatedAt: new Date() 
     }).where(eq(users.id, user.id));
 
-    // Redirect to frontend with tokens
-    const redirectUrl = new URL("/auth/callback", env.ALLOWED_ORIGINS[0]);
-    redirectUrl.searchParams.set("access_token", accessToken);
-    redirectUrl.searchParams.set("refresh_token", refreshToken);
-
-    return c.redirect(redirectUrl.toString());
+    const redirectUrl = `${env.FRONTEND_URL}/auth/callback?access_token=${accessToken}&refresh_token=${refreshToken}`;
+    return c.redirect(redirectUrl);
   } catch (error) {
     console.error("Google OAuth error:", error);
     return c.json({ error: "Authentication failed", detail: error instanceof Error ? error.message : String(error) }, 500);
