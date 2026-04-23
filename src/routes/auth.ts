@@ -10,6 +10,8 @@ import { signAccessToken, signRefreshToken, verifyRefreshToken, verifyAccessToke
 import { buildPasswordResetHtml } from "../lib/email";
 import { requireAuth } from "../middleware/auth";
 import { env } from "../lib/env";
+import { googleAuthService, GoogleAuthService } from "../services/googleAuth";
+import crypto from "crypto";
 
 const auth = new Hono();
 const resend = new Resend(env.RESEND_API_KEY);
@@ -272,6 +274,232 @@ auth.post("/push-token", requireAuth, async (c) => {
   }).where(eq(users.id, sub));
 
   return c.json({ message: "Push token saved successfully" });
+});
+
+// ============================================
+// GOOGLE OAUTH ROUTES
+// ============================================
+
+// GET /api/v1/auth/google
+auth.get("/google", (c) => {
+  const state = crypto.randomBytes(32).toString("hex");
+  const authUrl = googleAuthService.getAuthUrl(state);
+  
+  // Store state in cookie for CSRF protection
+  setCookie(c, "oauth_state", state, {
+    httpOnly: true,
+    secure: env.NODE_ENV === "production",
+    sameSite: "Lax",
+    maxAge: 60 * 10, // 10 minutes
+    path: "/",
+  });
+
+  return c.redirect(authUrl);
+});
+
+// GET /api/v1/auth/google/callback
+auth.get("/google/callback", async (c) => {
+  const code = c.req.query("code");
+  const state = c.req.query("state");
+  const storedState = getCookie(c, "oauth_state");
+
+  if (!code || !state || state !== storedState) {
+    return c.json({ error: "Invalid OAuth state" }, 400);
+  }
+
+  // Clear state cookie
+  deleteCookie(c, "oauth_state", { path: "/" });
+
+  try {
+    // Exchange code for tokens
+    const tokens = await googleAuthService.exchangeCodeForTokens(code);
+    const googleUser = await googleAuthService.getUserInfo(tokens.access_token);
+
+    if (!googleUser.verified_email) {
+      return c.json({ error: "Email not verified with Google" }, 400);
+    }
+
+    // Check if user exists
+    let user = await db.query.users.findFirst({ 
+      where: eq(users.email, googleUser.email) 
+    });
+
+    if (user) {
+      // Update existing user with Google ID if not set
+      if (!user.googleId) {
+        await db.update(users).set({
+          googleId: googleUser.id,
+          provider: "google",
+          avatarUrl: googleUser.picture,
+          updatedAt: new Date(),
+        }).where(eq(users.id, user.id));
+      }
+    } else {
+      // Create new user
+      const [newUser] = await db.insert(users).values({
+        email: googleUser.email,
+        googleId: googleUser.id,
+        provider: "google",
+        avatarUrl: googleUser.picture,
+        passwordHash: null,
+      }).returning();
+
+      user = newUser;
+
+      // Create user role
+      await db.insert(userRoles).values({
+        userId: user.id,
+        role: "client",
+      });
+
+      // Create profile
+      await db.insert(profiles).values({
+        userId: user.id,
+        displayName: googleUser.name,
+        email: googleUser.email,
+      });
+    }
+
+    // Get user role
+    const roleRow = await db.query.userRoles.findFirst({ 
+      where: eq(userRoles.userId, user.id) 
+    });
+    const role = roleRow?.role ?? "client";
+
+    // Generate JWT tokens
+    const accessToken = signAccessToken({ 
+      sub: user.id, 
+      email: user.email, 
+      role,
+      provider: "google"
+    });
+    const refreshToken = signRefreshToken({ sub: user.id });
+
+    // Store refresh token
+    await db.update(users).set({ 
+      refreshToken,
+      updatedAt: new Date() 
+    }).where(eq(users.id, user.id));
+
+    // Redirect to frontend with tokens
+    const redirectUrl = new URL("/auth/callback", env.ALLOWED_ORIGINS[0]);
+    redirectUrl.searchParams.set("access_token", accessToken);
+    redirectUrl.searchParams.set("refresh_token", refreshToken);
+
+    return c.redirect(redirectUrl.toString());
+  } catch (error) {
+    console.error("Google OAuth error:", error);
+    return c.json({ error: "Authentication failed" }, 500);
+  }
+});
+
+// POST /api/v1/auth/google/mobile
+auth.post("/google/mobile", async (c) => {
+  const body = z.object({
+    idToken: z.string(),
+    clientId: z.string(),
+  }).safeParse(await c.req.json());
+
+  if (!body.success) return c.json({ error: body.error.flatten() }, 400);
+
+  const { idToken, clientId } = body.data;
+
+  // Verify the client ID is one of our registered clients
+  const validClientIds = [
+    env.GOOGLE_WEB_CLIENT_ID,
+    env.GOOGLE_IOS_CLIENT_ID,
+    env.GOOGLE_ANDROID_CLIENT_ID,
+  ];
+
+  if (!validClientIds.includes(clientId)) {
+    return c.json({ error: "Invalid client ID" }, 400);
+  }
+
+  try {
+    // Verify ID token
+    const googleUser = await googleAuthService.verifyIdToken(idToken, clientId);
+
+    if (!googleUser.verified_email) {
+      return c.json({ error: "Email not verified with Google" }, 400);
+    }
+
+    // Check if user exists
+    let user = await db.query.users.findFirst({ 
+      where: eq(users.email, googleUser.email) 
+    });
+
+    if (user) {
+      // Update existing user with Google ID if not set
+      if (!user.googleId) {
+        await db.update(users).set({
+          googleId: googleUser.id,
+          provider: "google",
+          avatarUrl: googleUser.picture,
+          updatedAt: new Date(),
+        }).where(eq(users.id, user.id));
+      }
+    } else {
+      // Create new user
+      const [newUser] = await db.insert(users).values({
+        email: googleUser.email,
+        googleId: googleUser.id,
+        provider: "google",
+        avatarUrl: googleUser.picture,
+        passwordHash: null,
+      }).returning();
+
+      user = newUser;
+
+      // Create user role
+      await db.insert(userRoles).values({
+        userId: user.id,
+        role: "client",
+      });
+
+      // Create profile
+      await db.insert(profiles).values({
+        userId: user.id,
+        displayName: googleUser.name,
+        email: googleUser.email,
+      });
+    }
+
+    // Get user role
+    const roleRow = await db.query.userRoles.findFirst({ 
+      where: eq(userRoles.userId, user.id) 
+    });
+    const role = roleRow?.role ?? "client";
+
+    // Generate JWT tokens
+    const accessToken = signAccessToken({ 
+      sub: user.id, 
+      email: user.email, 
+      role,
+      provider: "google"
+    });
+    const refreshToken = signRefreshToken({ sub: user.id });
+
+    // Store refresh token
+    await db.update(users).set({ 
+      refreshToken,
+      updatedAt: new Date() 
+    }).where(eq(users.id, user.id));
+
+    return c.json({ 
+      accessToken, 
+      refreshToken,
+      user: { 
+        id: user.id, 
+        email: user.email, 
+        role,
+        avatarUrl: user.avatarUrl,
+        provider: "google"
+      } 
+    });
+  } catch (error) {
+    console.error("Google mobile auth error:", error);
+    return c.json({ error: "Authentication failed" }, 500);
+  }
 });
 
 export default auth;

@@ -15,6 +15,13 @@
       "when": 1776698710396,
       "tag": "0001_amazing_franklin_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776943735836,
+      "tag": "0002_lazy_krista_starr",
+      "breakpoints": true
     }
   ]
 }

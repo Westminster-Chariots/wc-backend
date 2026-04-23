@@ -5,6 +5,7 @@ export interface JwtPayload {
   sub: string;   // user id
   email: string;
   role: "admin" | "client";
+  provider?: "local" | "google";
 }
 
 export const signAccessToken = (payload: JwtPayload) =>
