@@ -106,5 +106,5 @@ export class GoogleAuthService {
 export const googleAuthService = new GoogleAuthService(
   env.GOOGLE_CLIENT_ID,
   env.GOOGLE_CLIENT_SECRET,
-  `${env.ALLOWED_ORIGINS[0]}/api/v1/auth/google/callback`
+  `https://wc-backend-ayx0.onrender.com/api/v1/auth/google/callback`
 );
