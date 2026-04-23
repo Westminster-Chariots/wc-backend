@@ -24,7 +24,7 @@ export const bookings = pgTable("bookings", {
   isAirportPickup: boolean("is_airport_pickup").default(false),
   flightNumber: text("flight_number"),
   specialRequests: text("special_requests"),
-  distanceMiles: numeric("distance_miles", { precision: 6, scale: 1 }),
+  distanceMiles: numeric("distance_miles", { precision: 8, scale: 2 }),
   durationMinutes: integer("duration_minutes"),
   basePrice: numeric("base_price", { precision: 10, scale: 2 }),
   gratuity: numeric("gratuity", { precision: 10, scale: 2 }),

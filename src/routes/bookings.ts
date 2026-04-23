@@ -126,9 +126,11 @@ router.post("/", requireAuth, async (c) => {
   if (!body.success) return c.json({ error: body.error.flatten() }, 400);
 
   const d = body.data;
-  const basePrice = calcPrice(d.distanceMiles, d.durationMinutes, d.vehicleType);
-  const gratuity = basePrice * 0.2;
-  const totalPrice = basePrice + gratuity;
+  const distanceMiles = Math.round(d.distanceMiles * 10) / 10;
+  const durationMinutes = Math.round(d.durationMinutes);
+  const basePrice = calcPrice(distanceMiles, durationMinutes, d.vehicleType);
+  const gratuity = Math.round(basePrice * 0.2 * 100) / 100;
+  const totalPrice = Math.round((basePrice + gratuity) * 100) / 100;
   const gkStatus = gatekeeperStatus(d.pickupDate, d.pickupTime);
   const hasLegs = (d.additionalLegs?.length ?? 0) > 0;
   const tripGroupId = hasLegs ? `TG-${crypto.randomUUID().slice(0, 8).toUpperCase()}` : null;
@@ -151,11 +153,11 @@ router.post("/", requireAuth, async (c) => {
         isAirportPickup: d.isAirportPickup ?? false,
         flightNumber: d.flightNumber ?? null,
         specialRequests: d.specialRequests ?? null,
-        distanceMiles: d.distanceMiles.toString(),
-        durationMinutes: d.durationMinutes,
-        basePrice: basePrice.toString(),
-        gratuity: gratuity.toString(),
-        totalPrice: totalPrice.toString(),
+        distanceMiles: distanceMiles.toString(),
+        durationMinutes,
+        basePrice: basePrice.toFixed(2),
+        gratuity: gratuity.toFixed(2),
+        totalPrice: totalPrice.toFixed(2),
         gatekeeperStatus: gkStatus,
         clientName,
         clientEmail,
@@ -168,21 +170,23 @@ router.post("/", requireAuth, async (c) => {
 
     if (hasLegs && d.additionalLegs) {
       const legRows = d.additionalLegs.map((leg, i) => {
-        const lp = calcPrice(leg.distanceMiles, leg.durationMinutes, d.vehicleType);
-        const lg = lp * 0.2;
+        const ld = Math.round(leg.distanceMiles * 10) / 10;
+        const ldm = Math.round(leg.durationMinutes);
+        const lp = calcPrice(ld, ldm, d.vehicleType);
+        const lg = Math.round(lp * 0.2 * 100) / 100;
         return {
           userId: user.sub,
           reservationNumber: generateReservationNumber(),
           pickupLocation: leg.pickup,
           dropoffLocation: leg.dropoff,
           pickupDate: leg.pickupDate,
-          pickupTime: leg.pickupTime + ':00', // Add seconds for PostgreSQL time format
+          pickupTime: leg.pickupTime + ':00',
           vehicleType: d.vehicleType,
-          distanceMiles: leg.distanceMiles.toString(),
-          durationMinutes: leg.durationMinutes,
-          basePrice: lp.toString(),
-          gratuity: lg.toString(),
-          totalPrice: (lp + lg).toString(),
+          distanceMiles: ld.toString(),
+          durationMinutes: ldm,
+          basePrice: lp.toFixed(2),
+          gratuity: lg.toFixed(2),
+          totalPrice: (Math.round((lp + lg) * 100) / 100).toFixed(2),
           gatekeeperStatus: gatekeeperStatus(leg.pickupDate, leg.pickupTime),
           clientName,
           clientEmail,
