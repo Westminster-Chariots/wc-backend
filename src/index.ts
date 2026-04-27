@@ -37,7 +37,7 @@ app.use(
     },
     credentials: true,
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization", "X-Request-ID", "x-client-type"],
+    allowHeaders: ["Content-Type", "Authorization", "X-Request-ID", "X-CSRF-Token", "x-client-type"],
     exposeHeaders: ["Set-Cookie"],
   })
 );
