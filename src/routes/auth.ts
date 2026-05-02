@@ -190,14 +190,16 @@ auth.post("/forgot-password", async (c) => {
   const resetUrl = `${env.FRONTEND_URL}/reset-password#token=${resetToken}`;
 
   try {
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: "Westminster Chariots <no-reply@mail.westminsterchariots.com>",
       to: user.email,
       subject: "Reset Your Password - Westminster Chariots",
       html: buildPasswordResetHtml(displayName, resetUrl),
     });
-  } catch (emailError) {
+    console.log("Password reset email sent:", result);
+  } catch (emailError: any) {
     console.error("Failed to send password reset email:", emailError);
+    console.error("Email error details:", JSON.stringify(emailError, null, 2));
     // Still return success to avoid email enumeration
   }
 
