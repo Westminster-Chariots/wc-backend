@@ -371,7 +371,7 @@ router.post("/:id/send-payment-link", requireAdmin, async (c) => {
 
   // Send email with payment link
   try {
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: "Westminster Chariots <no-reply@mail.westminsterchariots.com>",
       to: booking.clientEmail,
       subject: `Complete Your Booking - ${booking.reservationNumber}`,
@@ -387,8 +387,10 @@ router.post("/:id/send-payment-link", requireAdmin, async (c) => {
         paymentLink
       ),
     });
-  } catch (emailError) {
+    console.log("Payment link email sent:", result);
+  } catch (emailError: any) {
     console.error("Failed to send payment link email:", emailError);
+    console.error("Email error details:", JSON.stringify(emailError, null, 2));
     return c.json({ error: "Failed to send email" }, 500);
   }
 
@@ -422,7 +424,7 @@ router.post("/:id/send-manifest", requireAdmin, async (c) => {
 
   // Send email to driver with manifest
   try {
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: "Westminster Chariots Dispatch <dispatch@mail.westminsterchariots.com>",
       to: driver.email,
       subject: `New Assignment - ${booking.reservationNumber}`,
@@ -439,8 +441,10 @@ router.post("/:id/send-manifest", requireAdmin, async (c) => {
         booking.specialRequests
       ),
     });
-  } catch (emailError) {
+    console.log("Manifest email sent:", result);
+  } catch (emailError: any) {
     console.error("Failed to send manifest email:", emailError);
+    console.error("Email error details:", JSON.stringify(emailError, null, 2));
     return c.json({ error: "Failed to send email" }, 500);
   }
 

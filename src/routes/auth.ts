@@ -79,14 +79,16 @@ auth.post("/register", async (c) => {
 </div></body></html>`;
 
   try {
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: "Westminster Chariots <no-reply@mail.westminsterchariots.com>",
       to: email,
       subject: "Verify Your Email - Westminster Chariots",
       html: emailHtml,
     });
-  } catch (emailError) {
+    console.log("Verification email sent:", result);
+  } catch (emailError: any) {
     console.error("Failed to send verification email:", emailError);
+    console.error("Email error details:", JSON.stringify(emailError, null, 2));
     // Still allow registration to proceed, but log the error
   }
 

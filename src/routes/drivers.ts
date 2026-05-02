@@ -88,14 +88,16 @@ router.post("/", requireAdmin, async (c) => {
     // Send welcome email with credentials
     const loginUrl = `${env.ALLOWED_ORIGINS[0]}/auth`;
     try {
-      await resend.emails.send({
+      const result = await resend.emails.send({
         from: "Westminster Chariots <no-reply@mail.westminsterchariots.com>",
         to: body.data.email,
         subject: "Welcome to Westminster Chariots - Driver Account Created",
         html: buildDriverAccountEmail(body.data.name, body.data.email, tempPassword, loginUrl),
       });
-    } catch (emailError) {
+      console.log("Driver welcome email sent:", result);
+    } catch (emailError: any) {
       console.error("Failed to send driver welcome email:", emailError);
+      console.error("Email error details:", JSON.stringify(emailError, null, 2));
       // Continue even if email fails
     }
 
