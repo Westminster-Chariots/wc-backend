@@ -57,17 +57,23 @@ router.post("/checkout", requireAdmin, async (c) => {
   });
 
   // Send payment link email to client
-  await resend.emails.send({
-    from: "Westminster Chariots <book@mail.westminsterchariots.com>",
-    to: clientEmail,
-    subject: `Payment Requested — ${booking.reservationNumber}`,
-    html: buildBookingEmailHtml(
-      { ...booking, pickupTime: booking.pickupTime, pickupDate: booking.pickupDate },
-      "payment_requested",
-      undefined,
-      session.url!
-    ),
-  });
+  try {
+    const result = await resend.emails.send({
+      from: "Westminster Chariots <book@mail.westminsterchariots.com>",
+      to: clientEmail,
+      subject: `Payment Requested — ${booking.reservationNumber}`,
+      html: buildBookingEmailHtml(
+        { ...booking, pickupTime: booking.pickupTime, pickupDate: booking.pickupDate },
+        "payment_requested",
+        undefined,
+        session.url!
+      ),
+    });
+    console.log("Stripe checkout payment email sent:", result);
+  } catch (emailError: any) {
+    console.error("Failed to send Stripe checkout payment email:", emailError);
+    console.error("Email error details:", JSON.stringify(emailError, null, 2));
+  }
 
   // Update email phase
   await db.update(bookings).set({ emailPhase: "payment_requested", updatedAt: new Date() }).where(eq(bookings.id, bookingId));
@@ -143,21 +149,27 @@ router.post("/send-booking-email", requireAuth, async (c) => {
   const phaseMap = { pending: "pending_sent", confirmed: "confirmed_sent", cancelled: "cancelled_sent" };
 
   try {
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: "Westminster Chariots <book@mail.westminsterchariots.com>",
       to: clientEmail,
       subject: subjectMap[phase],
       html: buildBookingEmailHtml(booking, phase, driverName),
     });
+    console.log(`Booking ${phase} email sent to client:`, result);
 
     // Admin notification for pending bookings from users
     if (phase === "pending") {
-      await resend.emails.send({
-        from: "Westminster Chariots <book@mail.westminsterchariots.com>",
-        to: ADMIN_EMAIL,
-        subject: `New Booking Request — ${booking.reservationNumber}`,
-        html: buildBookingEmailHtml(booking, phase),
-      });
+      const adminEmails = ["admin@westminsterchariots.com", "westminsterchariots@gmail.com"];
+      const adminPromises = adminEmails.map(adminEmail =>
+        resend.emails.send({
+          from: "Westminster Chariots <book@mail.westminsterchariots.com>",
+          to: adminEmail,
+          subject: `New Booking Request — ${booking.reservationNumber}`,
+          html: buildBookingEmailHtml(booking, phase),
+        })
+      );
+      await Promise.all(adminPromises);
+      console.log("Admin notification emails sent for booking:", booking.reservationNumber);
     }
 
     await db.update(bookings)
@@ -166,8 +178,9 @@ router.post("/send-booking-email", requireAuth, async (c) => {
 
     return c.json({ success: true, phase: phaseMap[phase] });
   } catch (emailError) {
-    console.error(`Failed to send ${phase} booking email:`, emailError);
-    return c.json({ error: "Failed to send email", details: emailError.message }, 500);
+    console.error("Failed to send booking email:", emailError);
+    console.error("Email error details:", JSON.stringify(emailError, null, 2));
+    return c.json({ error: "Failed to send email" }, 500);
   }
 });
 
@@ -187,12 +200,19 @@ router.post("/forward-manifest", requireAdmin, async (c) => {
 
   const name = driverName ?? "Driver";
 
-  await resend.emails.send({
-    from: "Westminster Chariots <dispatch@mail.westminsterchariots.com>",
-    to: driverEmail,
-    subject: `WC Trip Manifest — ${booking.reservationNumber} | ${booking.pickupDate}`,
-    html: buildManifestHtml(booking, name),
-  });
+  try {
+    const result = await resend.emails.send({
+      from: "Westminster Chariots <dispatch@mail.westminsterchariots.com>",
+      to: driverEmail,
+      subject: `WC Trip Manifest — ${booking.reservationNumber} | ${booking.pickupDate}`,
+      html: buildManifestHtml(booking, name),
+    });
+    console.log("Forward manifest email sent:", result);
+  } catch (emailError: any) {
+    console.error("Failed to send forward manifest email:", emailError);
+    console.error("Email error details:", JSON.stringify(emailError, null, 2));
+    return c.json({ error: "Failed to send email" }, 500);
+  }
 
   await db.update(bookings)
     .set({ emailPhase: "manifest_sent", updatedAt: new Date() })

@@ -78,14 +78,18 @@ async function sendBatch(
       batch.map(async (r) => {
         if (!r.email) { failed++; return; }
         try {
-          await resend.emails.send({
-            from: "Westminster Chariots <info@westminsterchariots.com>",
+          const result = await resend.emails.send({
+            from: "Westminster Chariots <info@mail.westminsterchariots.com>",
             to: r.email,
             subject,
             html: buildPromoHtml(heading, body, ctaText, ctaUrl, r.displayName ?? "Valued Client"),
           });
+          console.log("Campaign email sent to:", r.email);
           sent++;
-        } catch { failed++; }
+        } catch (err: any) {
+          console.error("Failed to send campaign email to:", r.email, err);
+          failed++;
+        }
       })
     );
   }

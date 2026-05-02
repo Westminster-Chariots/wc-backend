@@ -42,14 +42,15 @@ router.post("/process", async (c) => {
     if (!type) { skipped++; continue; }
 
     try {
-      await resend.emails.send({
-        from: "Westminster Chariots <book@westminsterchariots.com>",
+      const result = await resend.emails.send({
+        from: "Westminster Chariots <book@mail.westminsterchariots.com>",
         to: booking.clientEmail!,
         subject: type === "24h"
           ? `Reminder: Your ride tomorrow — ${booking.reservationNumber}`
           : `Arriving soon: Your ride in 1 hour — ${booking.reservationNumber}`,
         html: buildReminderHtml(booking, type),
       });
+      console.log(`Reminder email sent for booking:`, booking.reservationNumber);
 
       const newPhase = phase === "none" ? `reminder_${type}` : `${phase},reminder_${type}`;
       await db.update(bookings)
@@ -57,7 +58,8 @@ router.post("/process", async (c) => {
         .where(eq(bookings.id, booking.id));
 
       if (type === "24h") sent24h++; else sent1h++;
-    } catch {
+    } catch (err: any) {
+      console.error("Failed to send reminder email:", err);
       skipped++;
     }
   }

@@ -199,6 +199,25 @@ router.post("/", requireAuth, async (c) => {
       await db.insert(bookings).values(legRows);
     }
 
+    // Send notification email to admins
+    try {
+      const adminEmails = ["admin@westminsterchariots.com", "westminsterchariots@gmail.com"];
+      const emailPromises = adminEmails.map(adminEmail => 
+        resend.emails.send({
+          from: "Westminster Chariots <book@mail.westminsterchariots.com>",
+          to: adminEmail,
+          subject: `New Booking Request — ${reservationNumber}`,
+          html: buildBookingEmailHtml(primary, "pending"),
+        })
+      );
+      await Promise.all(emailPromises);
+      console.log("Admin notification emails sent for booking:", reservationNumber);
+    } catch (emailError: any) {
+      console.error("Failed to send admin notification emails:", emailError);
+      console.error("Email error details:", JSON.stringify(emailError, null, 2));
+      // Don't fail the booking if email fails
+    }
+
     return c.json(primary, 201);
   } catch (error) {
     console.error("Booking creation error:", error);
@@ -234,8 +253,10 @@ router.patch("/:id/status", requireAdmin, async (c) => {
             existing.dropoffLocation
           ),
         });
-      } catch (emailError) {
+        console.log("Cancellation email sent to driver:", driver.email);
+      } catch (emailError: any) {
         console.error("Failed to send cancellation email to driver:", emailError);
+        console.error("Email error details:", JSON.stringify(emailError, null, 2));
       }
     }
   }
