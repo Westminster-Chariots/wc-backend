@@ -89,7 +89,7 @@ router.post("/", requireAdmin, async (c) => {
     const loginUrl = `${env.ALLOWED_ORIGINS[0]}/auth`;
     try {
       await resend.emails.send({
-        from: "Westminster Chariots <no-reply@westminsterchariots.com>",
+        from: "Westminster Chariots <no-reply@mail.westminsterchariots.com>",
         to: body.data.email,
         subject: "Welcome to Westminster Chariots - Driver Account Created",
         html: buildDriverAccountEmail(body.data.name, body.data.email, tempPassword, loginUrl),

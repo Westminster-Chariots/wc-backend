@@ -221,7 +221,7 @@ router.patch("/:id/status", requireAdmin, async (c) => {
     if (driver?.email) {
       try {
         await resend.emails.send({
-          from: "Westminster Chariots Dispatch <dispatch@westminsterchariots.com>",
+          from: "Westminster Chariots Dispatch <dispatch@mail.westminsterchariots.com>",
           to: driver.email,
           subject: `Trip Cancelled - ${existing.reservationNumber}`,
           html: buildCancellationEmail(
@@ -372,7 +372,7 @@ router.post("/:id/send-payment-link", requireAdmin, async (c) => {
   // Send email with payment link
   try {
     await resend.emails.send({
-      from: "Westminster Chariots <no-reply@westminsterchariots.com>",
+      from: "Westminster Chariots <no-reply@mail.westminsterchariots.com>",
       to: booking.clientEmail,
       subject: `Complete Your Booking - ${booking.reservationNumber}`,
       html: buildPaymentLinkEmail(
@@ -423,7 +423,7 @@ router.post("/:id/send-manifest", requireAdmin, async (c) => {
   // Send email to driver with manifest
   try {
     await resend.emails.send({
-      from: "Westminster Chariots Dispatch <dispatch@westminsterchariots.com>",
+      from: "Westminster Chariots Dispatch <dispatch@mail.westminsterchariots.com>",
       to: driver.email,
       subject: `New Assignment - ${booking.reservationNumber}`,
       html: buildManifestEmail(

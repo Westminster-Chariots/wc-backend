@@ -80,7 +80,7 @@ auth.post("/register", async (c) => {
 
   try {
     await resend.emails.send({
-      from: "Westminster Chariots <no-reply@westminsterchariots.com>",
+      from: "Westminster Chariots <no-reply@mail.westminsterchariots.com>",
       to: email,
       subject: "Verify Your Email - Westminster Chariots",
       html: emailHtml,
@@ -191,7 +191,7 @@ auth.post("/forgot-password", async (c) => {
 
   try {
     await resend.emails.send({
-      from: "Westminster Chariots <no-reply@westminsterchariots.com>",
+      from: "Westminster Chariots <no-reply@mail.westminsterchariots.com>",
       to: user.email,
       subject: "Reset Your Password - Westminster Chariots",
       html: buildPasswordResetHtml(displayName, resetUrl),

@@ -58,7 +58,7 @@ router.post("/checkout", requireAdmin, async (c) => {
 
   // Send payment link email to client
   await resend.emails.send({
-    from: "Westminster Chariots <book@westminsterchariots.com>",
+    from: "Westminster Chariots <book@mail.westminsterchariots.com>",
     to: clientEmail,
     subject: `Payment Requested — ${booking.reservationNumber}`,
     html: buildBookingEmailHtml(
@@ -144,7 +144,7 @@ router.post("/send-booking-email", requireAuth, async (c) => {
 
   try {
     await resend.emails.send({
-      from: "Westminster Chariots <book@westminsterchariots.com>",
+      from: "Westminster Chariots <book@mail.westminsterchariots.com>",
       to: clientEmail,
       subject: subjectMap[phase],
       html: buildBookingEmailHtml(booking, phase, driverName),
@@ -153,7 +153,7 @@ router.post("/send-booking-email", requireAuth, async (c) => {
     // Admin notification for pending bookings from users
     if (phase === "pending") {
       await resend.emails.send({
-        from: "Westminster Chariots <book@westminsterchariots.com>",
+        from: "Westminster Chariots <book@mail.westminsterchariots.com>",
         to: ADMIN_EMAIL,
         subject: `New Booking Request — ${booking.reservationNumber}`,
         html: buildBookingEmailHtml(booking, phase),
@@ -188,7 +188,7 @@ router.post("/forward-manifest", requireAdmin, async (c) => {
   const name = driverName ?? "Driver";
 
   await resend.emails.send({
-    from: "Westminster Chariots <dispatch@westminsterchariots.com>",
+    from: "Westminster Chariots <dispatch@mail.westminsterchariots.com>",
     to: driverEmail,
     subject: `WC Trip Manifest — ${booking.reservationNumber} | ${booking.pickupDate}`,
     html: buildManifestHtml(booking, name),
