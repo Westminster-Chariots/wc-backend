@@ -289,12 +289,21 @@ auth.post("/push-token", requireAuth, async (c) => {
 
 // GET /api/v1/auth/google
 auth.get("/google", (c) => {
+  const redirect = c.req.query("redirect") || "/";
   const state = crypto.randomBytes(32).toString("hex");
   const authUrl = googleAuthService.getAuthUrl(state);
   
-  // Store state in cookie for CSRF protection
+  // Store state and redirect in cookie for CSRF protection
   // Must be SameSite=None because Google redirects back cross-site
   setCookie(c, "oauth_state", state, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "None",
+    maxAge: 60 * 10, // 10 minutes
+    path: "/",
+  });
+
+  setCookie(c, "oauth_redirect", redirect, {
     httpOnly: true,
     secure: true,
     sameSite: "None",
@@ -310,13 +319,15 @@ auth.get("/google/callback", async (c) => {
   const code = c.req.query("code");
   const state = c.req.query("state");
   const storedState = getCookie(c, "oauth_state");
+  const redirect = getCookie(c, "oauth_redirect") || "/";
 
   if (!code || !state || state !== storedState) {
     return c.json({ error: "Invalid OAuth state" }, 400);
   }
 
-  // Clear state cookie
+  // Clear state and redirect cookies
   deleteCookie(c, "oauth_state", { path: "/" });
+  deleteCookie(c, "oauth_redirect", { path: "/" });
 
   try {
     // Exchange code for tokens
@@ -389,7 +400,7 @@ auth.get("/google/callback", async (c) => {
       updatedAt: new Date() 
     }).where(eq(users.id, user.id));
 
-    const redirectUrl = `${env.FRONTEND_URL}/auth/callback?access_token=${accessToken}&refresh_token=${refreshToken}`;
+    const redirectUrl = `${env.FRONTEND_URL}/auth/callback?access_token=${accessToken}&refresh_token=${refreshToken}&redirect=${encodeURIComponent(redirect)}`;
     return c.redirect(redirectUrl);
   } catch (error) {
     console.error("Google OAuth error:", error);
