@@ -3,7 +3,7 @@ import { z } from "zod";
 import { eq, desc, asc, and } from "drizzle-orm";
 import { Resend } from "resend";
 import { db } from "../db";
-import { bookings, auditLog, drivers } from "../db/schema";
+import { bookings, auditLog, drivers, profiles } from "../db/schema";
 import { requireAuth, requireAdmin } from "../middleware/auth";
 import { buildPaymentLinkEmail, buildManifestEmail, buildCancellationEmail } from "../lib/email-templates";
 import { env } from "../lib/env";
@@ -99,24 +99,69 @@ router.get("/", requireAuth, async (c) => {
           orderBy: [asc(bookings.pickupDate), asc(bookings.pickupTime)],
           limit,
           offset,
+          with: {
+            user: {
+              columns: { id: true, email: true },
+              with: {
+                profile: {
+                  columns: { clientCode: true, displayName: true, phone: true },
+                },
+              },
+            },
+          },
         })
       : await db.query.bookings.findMany({
           where: eq(bookings.userId, user.sub),
           orderBy: [desc(bookings.pickupDate), desc(bookings.pickupTime)],
           limit,
           offset,
+          with: {
+            user: {
+              columns: { id: true, email: true },
+              with: {
+                profile: {
+                  columns: { clientCode: true, displayName: true, phone: true },
+                },
+              },
+            },
+          },
         });
 
-  return c.json(rows);
+  // Transform the data to include clientCode
+  const transformedRows = rows.map(row => ({
+    ...row,
+    clientCode: row.user?.profile?.clientCode || null,
+  }));
+
+  return c.json(transformedRows);
 });
 
 // GET /api/v1/bookings/:id
 router.get("/:id", requireAuth, async (c) => {
   const user = c.get("user");
-  const row = await db.query.bookings.findFirst({ where: eq(bookings.id, c.req.param("id")) });
+  const row = await db.query.bookings.findFirst({ 
+    where: eq(bookings.id, c.req.param("id")),
+    with: {
+      user: {
+        columns: { id: true, email: true },
+        with: {
+          profile: {
+            columns: { clientCode: true, displayName: true, phone: true },
+          },
+        },
+      },
+    },
+  });
   if (!row) return c.json({ error: "Not found" }, 404);
   if (user.role !== "admin" && row.userId !== user.sub) return c.json({ error: "Forbidden" }, 403);
-  return c.json(row);
+  
+  // Transform the data to include clientCode
+  const transformedRow = {
+    ...row,
+    clientCode: row.user?.profile?.clientCode || null,
+  };
+  
+  return c.json(transformedRow);
 });
 
 // POST /api/v1/bookings — create booking (+ optional multi-leg)

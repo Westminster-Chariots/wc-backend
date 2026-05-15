@@ -7,6 +7,46 @@ import { users, userRoles, profiles } from "../db/schema";
 import { requireAuth, requireAdmin } from "../middleware/auth";
 import type { JwtPayload } from "../lib/jwt";
 
+// Function to generate client code based on Westminster Chariots nomenclature
+function generateClientCode(
+  displayName: string,
+  isCorporate: boolean,
+  corporateName: string | null | undefined,
+  stateAbbrev: string
+): string {
+  // Clean the display name to get initials
+  const nameParts = displayName.trim().split(/\s+/);
+  
+  // Get first and last initials (uppercase)
+  // For single name clients, use the same initial for both
+  const firstInitial = nameParts[0]?.[0]?.toUpperCase() || 'X';
+  const lastInitial = nameParts.length > 1 
+    ? nameParts[nameParts.length - 1]?.[0]?.toUpperCase() || 'X'
+    : firstInitial; // Use same initial for single name clients
+  
+  // Get corporate initial if corporate client
+  let corpInitial = '';
+  if (isCorporate && corporateName) {
+    corpInitial = corporateName.trim().split(/\s+/)[0]?.[0]?.toUpperCase() || '';
+  }
+  
+  // Generate random code
+  const randomDigits = isCorporate 
+    ? Math.floor(1000 + Math.random() * 9000).toString() // 4 digits for corporate
+    : Math.floor(100 + Math.random() * 900).toString();  // 3 digits for private
+  
+  // Build the client code
+  const stateCode = stateAbbrev.toUpperCase();
+  
+  if (isCorporate && corpInitial) {
+    // Corporate format: State + Corp Initial + First Initial + Last Initial + - + 4 digits
+    return `${stateCode}${corpInitial}${firstInitial}${lastInitial}-${randomDigits}`;
+  } else {
+    // Private format: State + First Initial + Last Initial + - + 3 digits
+    return `${stateCode}${firstInitial}${lastInitial}-${randomDigits}`;
+  }
+}
+
 const router = new Hono<{ Variables: { user: JwtPayload } }>();
 
 const ProfileUpdateSchema = z.object({
@@ -51,6 +91,14 @@ router.post("/", requireAdmin, async (c) => {
   if (!body.success) return c.json({ error: body.error.flatten() }, 400);
   const d = body.data;
 
+  // Generate client code using Westminster Chariots nomenclature
+  const clientCode = generateClientCode(
+    d.displayName,
+    d.isCorporate,
+    d.corporateName,
+    d.stateAbbrev
+  );
+
   // Use a placeholder email if none provided so the users table constraint is satisfied
   const email = d.email ?? `noemail-${crypto.randomUUID().slice(0, 8)}@placeholder.wc`;
   const passwordHash = await bcrypt.hash(crypto.randomUUID(), 12); // unusable password
@@ -71,6 +119,7 @@ router.post("/", requireAdmin, async (c) => {
       phone: d.phone ?? null,
       isCorporate: d.isCorporate,
       corporateName: d.corporateName ?? null,
+      clientCode: clientCode,
       stateAbbrev: d.stateAbbrev,
       notes: d.notes ?? null,
     })
