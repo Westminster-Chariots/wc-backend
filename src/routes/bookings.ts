@@ -6,6 +6,7 @@ import { db } from "../db";
 import { bookings, auditLog, drivers, profiles } from "../db/schema";
 import { requireAuth, requireAdmin } from "../middleware/auth";
 import { buildPaymentLinkEmail, buildManifestEmail, buildCancellationEmail } from "../lib/email-templates";
+import { buildBookingEmailHtml } from "../lib/email";
 import { env } from "../lib/env";
 import { notifyBookingUpdate } from "../lib/pusher";
 import type { JwtPayload } from "../lib/jwt";
@@ -249,6 +250,20 @@ router.post("/", requireAuth, async (c) => {
         };
       });
       await db.insert(bookings).values(legRows);
+    }
+
+    // Send confirmation email to customer
+    try {
+      await resend.emails.send({
+        from: "Westminster Chariots <book@mail.westminsterchariots.com>",
+        to: clientEmail,
+        subject: `Booking Confirmation — ${reservationNumber}`,
+        html: buildBookingEmailHtml(primary, "pending"),
+      });
+      console.log("Customer confirmation email sent to:", clientEmail);
+    } catch (emailError: any) {
+      console.error("Failed to send customer confirmation email:", emailError);
+      // Don't fail the booking if email fails
     }
 
     // Send notification email to admins
