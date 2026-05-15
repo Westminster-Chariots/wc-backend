@@ -93,75 +93,82 @@ router.get("/", requireAuth, async (c) => {
   const limit = Math.min(Number(pageSize), 200);
   const offset = Number(page) * limit;
 
-  const rows =
-    user.role === "admin"
-      ? await db.query.bookings.findMany({
-          orderBy: [asc(bookings.pickupDate), asc(bookings.pickupTime)],
-          limit,
-          offset,
-          with: {
-            user: {
-              columns: { id: true, email: true },
-              with: {
-                profile: {
-                  columns: { clientCode: true, displayName: true, phone: true },
-                },
-              },
-            },
-          },
-        })
-      : await db.query.bookings.findMany({
-          where: eq(bookings.userId, user.sub),
-          orderBy: [desc(bookings.pickupDate), desc(bookings.pickupTime)],
-          limit,
-          offset,
-          with: {
-            user: {
-              columns: { id: true, email: true },
-              with: {
-                profile: {
-                  columns: { clientCode: true, displayName: true, phone: true },
-                },
-              },
-            },
-          },
-        });
+  try {
+    const rows =
+      user.role === "admin"
+        ? await db.query.bookings.findMany({
+            orderBy: [asc(bookings.pickupDate), asc(bookings.pickupTime)],
+            limit,
+            offset,
+          })
+        : await db.query.bookings.findMany({
+            where: eq(bookings.userId, user.sub),
+            orderBy: [desc(bookings.pickupDate), desc(bookings.pickupTime)],
+            limit,
+            offset,
+          });
 
-  // Transform the data to include clientCode
-  const transformedRows = rows.map(row => ({
-    ...row,
-    clientCode: row.user?.profile?.clientCode || null,
-  }));
+    // Fetch client codes separately to avoid join issues
+    const rowsWithClientCodes = await Promise.all(
+      rows.map(async (row) => {
+        let clientCode = null;
+        if (row.userId) {
+          try {
+            const profile = await db.query.profiles.findFirst({
+              where: eq(profiles.userId, row.userId),
+              columns: { clientCode: true },
+            });
+            clientCode = profile?.clientCode || null;
+          } catch (error) {
+            console.error(`Failed to fetch profile for user ${row.userId}:`, error);
+          }
+        }
+        return {
+          ...row,
+          clientCode,
+        };
+      })
+    );
 
-  return c.json(transformedRows);
+    return c.json(rowsWithClientCodes);
+  } catch (error: any) {
+    console.error("Failed to fetch bookings:", error);
+    return c.json({ error: "Failed to fetch bookings", details: error.message }, 500);
+  }
 });
 
 // GET /api/v1/bookings/:id
 router.get("/:id", requireAuth, async (c) => {
   const user = c.get("user");
-  const row = await db.query.bookings.findFirst({ 
-    where: eq(bookings.id, c.req.param("id")),
-    with: {
-      user: {
-        columns: { id: true, email: true },
-        with: {
-          profile: {
-            columns: { clientCode: true, displayName: true, phone: true },
-          },
-        },
-      },
-    },
-  });
-  if (!row) return c.json({ error: "Not found" }, 404);
-  if (user.role !== "admin" && row.userId !== user.sub) return c.json({ error: "Forbidden" }, 403);
-  
-  // Transform the data to include clientCode
-  const transformedRow = {
-    ...row,
-    clientCode: row.user?.profile?.clientCode || null,
-  };
-  
-  return c.json(transformedRow);
+  try {
+    const row = await db.query.bookings.findFirst({ 
+      where: eq(bookings.id, c.req.param("id")),
+    });
+    if (!row) return c.json({ error: "Not found" }, 404);
+    if (user.role !== "admin" && row.userId !== user.sub) return c.json({ error: "Forbidden" }, 403);
+    
+    // Fetch client code separately
+    let clientCode = null;
+    if (row.userId) {
+      try {
+        const profile = await db.query.profiles.findFirst({
+          where: eq(profiles.userId, row.userId),
+          columns: { clientCode: true },
+        });
+        clientCode = profile?.clientCode || null;
+      } catch (error) {
+        console.error(`Failed to fetch profile for user ${row.userId}:`, error);
+      }
+    }
+    
+    return c.json({
+      ...row,
+      clientCode,
+    });
+  } catch (error: any) {
+    console.error("Failed to fetch booking:", error);
+    return c.json({ error: "Failed to fetch booking", details: error.message }, 500);
+  }
 });
 
 // POST /api/v1/bookings — create booking (+ optional multi-leg)
