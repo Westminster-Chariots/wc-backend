@@ -17,6 +17,7 @@ import payments from "./routes/payments";
 import reminders from "./routes/reminders";
 import uploads from "./routes/uploads";
 import users from "./routes/users";
+import contact from "./routes/contact";
 
 const app = new Hono();
 
@@ -58,6 +59,7 @@ app.route("/api/v1/payments", payments);
 app.route("/api/v1/reminders", reminders);
 app.route("/api/v1/uploads", uploads);
 app.route("/api/v1/users", users);
+app.route("/api/v1/contact", contact);
 
 serve({ fetch: app.fetch, port: env.PORT }, () => {
   console.log(`wc-backend running on port ${env.PORT}`);
