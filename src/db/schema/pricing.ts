@@ -16,7 +16,7 @@ export const pricingConfig = pgTable("pricing_config", {
 
 export const vehiclePricing = pgTable("vehicle_pricing", {
   id: uuid("id").primaryKey().defaultRandom(),
-  vehicleId: uuid("vehicle_id").notNull(),
+  vehicleId: uuid("vehicle_id").notNull().references(() => fleet.id, { onDelete: "cascade" }),
   baseRate: numeric("base_rate", { precision: 10, scale: 2 }),
   ratePerMile: numeric("rate_per_mile", { precision: 10, scale: 2 }),
   ratePerMinute: numeric("rate_per_minute", { precision: 10, scale: 2 }),

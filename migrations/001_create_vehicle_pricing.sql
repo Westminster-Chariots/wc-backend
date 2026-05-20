@@ -4,13 +4,13 @@
 
 -- Create vehicle_pricing table
 CREATE TABLE IF NOT EXISTS vehicle_pricing (
-    id SERIAL PRIMARY KEY,
-    vehicle_id INTEGER NOT NULL REFERENCES fleet(id) ON DELETE CASCADE,
-    base_rate DECIMAL(10, 2) NOT NULL,
-    rate_per_mile DECIMAL(10, 2) NOT NULL,
-    rate_per_minute DECIMAL(10, 2) NOT NULL,
-    tax_percent DECIMAL(5, 2) NOT NULL DEFAULT 20.00,
-    updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    vehicle_id UUID NOT NULL REFERENCES fleet(id) ON DELETE CASCADE,
+    base_rate DECIMAL(10, 2),
+    rate_per_mile DECIMAL(10, 2),
+    rate_per_minute DECIMAL(10, 2),
+    tax_percent DECIMAL(5, 2),
+    updated_by UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(vehicle_id)
