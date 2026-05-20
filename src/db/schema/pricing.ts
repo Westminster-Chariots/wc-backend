@@ -7,7 +7,7 @@ export const pricingConfig = pgTable("pricing_config", {
   baseRate: numeric("base_rate", { precision: 10, scale: 2 }).notNull().default("30"),
   ratePerMile: numeric("rate_per_mile", { precision: 10, scale: 2 }).notNull().default("4.00"),
   ratePerMinute: numeric("rate_per_minute", { precision: 10, scale: 2 }).notNull().default("1.25"),
-  gratuityPercent: numeric("gratuity_percent", { precision: 5, scale: 2 }).notNull().default("20"),
+  taxPercent: numeric("tax_percent", { precision: 5, scale: 2 }).notNull().default("20"),
   waitTimeHourly: numeric("wait_time_hourly", { precision: 10, scale: 2 }).notNull().default("95"),
   updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

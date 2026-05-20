@@ -34,15 +34,15 @@ router.post("/calculate", requireAuth, async (c) => {
   const baseRate = parseFloat(config.baseRate);
   const ratePerMile = parseFloat(config.ratePerMile);
   const ratePerMinute = parseFloat(config.ratePerMinute);
-  const gratuityPercent = parseFloat(config.gratuityPercent);
+  const taxPercent = parseFloat(config.taxPercent);
 
   const subtotal = baseRate + (ratePerMile * distanceMiles) + (ratePerMinute * durationMinutes);
-  const gratuity = subtotal * (gratuityPercent / 100);
-  const total = subtotal + gratuity;
+  const tax = subtotal * (taxPercent / 100);
+  const total = subtotal + tax;
 
   return c.json({
     subtotal: Math.round(subtotal * 100) / 100,
-    gratuity: Math.round(gratuity * 100) / 100,
+    tax: Math.round(tax * 100) / 100,
     total: Math.round(total * 100) / 100,
     breakdown: {
       baseRate,
@@ -50,7 +50,7 @@ router.post("/calculate", requireAuth, async (c) => {
       ratePerMinute,
       distanceMiles,
       durationMinutes,
-      gratuityPercent,
+      taxPercent,
     }
   });
 });
