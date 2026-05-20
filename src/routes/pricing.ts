@@ -61,6 +61,46 @@ router.get("/config", requireAuth, async (c) => {
   return c.json(rows);
 });
 
+// POST /api/v1/pricing/config — admin only (create new pricing config)
+router.post("/config", requireAdmin, async (c) => {
+  const user = c.get("user");
+  const body = z.object({
+    vehicleType: z.string().min(1),
+    baseRate: z.number().default(30),
+    ratePerMile: z.number().default(4.0),
+    ratePerMinute: z.number().default(1.25),
+    taxPercent: z.number().default(20),
+    waitTimeHourly: z.number().default(95),
+  }).safeParse(await c.req.json());
+
+  if (!body.success) return c.json({ error: body.error.flatten() }, 400);
+  const d = body.data;
+
+  // Check if config already exists for this vehicle type
+  const existing = await db.query.pricingConfig.findFirst({
+    where: eq(pricingConfig.vehicleType, d.vehicleType.toLowerCase())
+  });
+
+  if (existing) {
+    return c.json({ error: "Pricing config already exists for this vehicle type" }, 409);
+  }
+
+  const [row] = await db
+    .insert(pricingConfig)
+    .values({
+      vehicleType: d.vehicleType.toLowerCase(),
+      baseRate: String(d.baseRate),
+      ratePerMile: String(d.ratePerMile),
+      ratePerMinute: String(d.ratePerMinute),
+      taxPercent: String(d.taxPercent),
+      waitTimeHourly: String(d.waitTimeHourly),
+      updatedBy: user.sub,
+    })
+    .returning();
+
+  return c.json(row, 201);
+});
+
 // PATCH /api/v1/pricing/config/:id — admin only
 router.patch("/config/:id", requireAdmin, async (c) => {
   const user = c.get("user");
@@ -68,7 +108,7 @@ router.patch("/config/:id", requireAdmin, async (c) => {
     baseRate: z.number().optional(),
     ratePerMile: z.number().optional(),
     ratePerMinute: z.number().optional(),
-    gratuityPercent: z.number().optional(),
+    taxPercent: z.number().optional(),
     waitTimeHourly: z.number().optional(),
   }).safeParse(await c.req.json());
 
@@ -81,7 +121,7 @@ router.patch("/config/:id", requireAdmin, async (c) => {
       ...(d.baseRate !== undefined && { baseRate: String(d.baseRate) }),
       ...(d.ratePerMile !== undefined && { ratePerMile: String(d.ratePerMile) }),
       ...(d.ratePerMinute !== undefined && { ratePerMinute: String(d.ratePerMinute) }),
-      ...(d.gratuityPercent !== undefined && { gratuityPercent: String(d.gratuityPercent) }),
+      ...(d.taxPercent !== undefined && { taxPercent: String(d.taxPercent) }),
       ...(d.waitTimeHourly !== undefined && { waitTimeHourly: String(d.waitTimeHourly) }),
       updatedBy: user.sub,
       updatedAt: new Date(),
