@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { eq, asc } from "drizzle-orm";
 import { db } from "../db";
-import { pricingConfig, flatZones } from "../db/schema";
+import { pricingConfig, flatZones, vehiclePricing } from "../db/schema";
 import { requireAuth, requireAdmin } from "../middleware/auth";
 import type { JwtPayload } from "../lib/jwt";
 
@@ -201,6 +201,84 @@ router.delete("/zones/:id", requireAdmin, async (c) => {
   const existing = await db.query.flatZones.findFirst({ where: eq(flatZones.id, c.req.param("id")) });
   if (!existing) return c.json({ error: "Not found" }, 404);
   await db.delete(flatZones).where(eq(flatZones.id, c.req.param("id")));
+  return c.json({ message: "Deleted" });
+});
+
+// GET /api/v1/pricing/vehicles — get all vehicle-specific pricing
+router.get("/vehicles", requireAuth, async (c) => {
+  const rows = await db.query.vehiclePricing.findMany();
+  return c.json(rows);
+});
+
+// GET /api/v1/pricing/vehicles/:vehicleId — get pricing for specific vehicle
+router.get("/vehicles/:vehicleId", requireAuth, async (c) => {
+  const row = await db.query.vehiclePricing.findFirst({
+    where: eq(vehiclePricing.vehicleId, c.req.param("vehicleId"))
+  });
+  if (!row) return c.json(null);
+  return c.json(row);
+});
+
+// PUT /api/v1/pricing/vehicles/:vehicleId — upsert vehicle-specific pricing (admin only)
+router.put("/vehicles/:vehicleId", requireAdmin, async (c) => {
+  const user = c.get("user");
+  const vehicleId = c.req.param("vehicleId");
+  
+  const body = z.object({
+    baseRate: z.number().optional(),
+    ratePerMile: z.number().optional(),
+    ratePerMinute: z.number().optional(),
+    taxPercent: z.number().optional(),
+  }).safeParse(await c.req.json());
+
+  if (!body.success) return c.json({ error: body.error.flatten() }, 400);
+  const d = body.data;
+
+  // Check if pricing already exists
+  const existing = await db.query.vehiclePricing.findFirst({
+    where: eq(vehiclePricing.vehicleId, vehicleId)
+  });
+
+  if (existing) {
+    // Update existing
+    const [updated] = await db
+      .update(vehiclePricing)
+      .set({
+        ...(d.baseRate !== undefined && { baseRate: String(d.baseRate) }),
+        ...(d.ratePerMile !== undefined && { ratePerMile: String(d.ratePerMile) }),
+        ...(d.ratePerMinute !== undefined && { ratePerMinute: String(d.ratePerMinute) }),
+        ...(d.taxPercent !== undefined && { taxPercent: String(d.taxPercent) }),
+        updatedBy: user.sub,
+        updatedAt: new Date(),
+      })
+      .where(eq(vehiclePricing.vehicleId, vehicleId))
+      .returning();
+    return c.json(updated);
+  } else {
+    // Create new
+    const [created] = await db
+      .insert(vehiclePricing)
+      .values({
+        vehicleId,
+        ...(d.baseRate !== undefined && { baseRate: String(d.baseRate) }),
+        ...(d.ratePerMile !== undefined && { ratePerMile: String(d.ratePerMile) }),
+        ...(d.ratePerMinute !== undefined && { ratePerMinute: String(d.ratePerMinute) }),
+        ...(d.taxPercent !== undefined && { taxPercent: String(d.taxPercent) }),
+        updatedBy: user.sub,
+      })
+      .returning();
+    return c.json(created, 201);
+  }
+});
+
+// DELETE /api/v1/pricing/vehicles/:vehicleId — delete vehicle-specific pricing (admin only)
+router.delete("/vehicles/:vehicleId", requireAdmin, async (c) => {
+  const existing = await db.query.vehiclePricing.findFirst({
+    where: eq(vehiclePricing.vehicleId, c.req.param("vehicleId"))
+  });
+  if (!existing) return c.json({ error: "Not found" }, 404);
+  
+  await db.delete(vehiclePricing).where(eq(vehiclePricing.vehicleId, c.req.param("vehicleId")));
   return c.json({ message: "Deleted" });
 });
 
