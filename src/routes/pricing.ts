@@ -234,38 +234,47 @@ router.put("/vehicles/:vehicleId", requireAdmin, async (c) => {
   if (!body.success) return c.json({ error: body.error.flatten() }, 400);
   const d = body.data;
 
+  // If all fields are undefined, return error
+  if (d.baseRate === undefined && d.ratePerMile === undefined && d.ratePerMinute === undefined && d.taxPercent === undefined) {
+    return c.json({ error: "At least one pricing field must be provided" }, 400);
+  }
+
   // Check if pricing already exists
   const existing = await db.query.vehiclePricing.findFirst({
     where: eq(vehiclePricing.vehicleId, vehicleId)
   });
 
   if (existing) {
-    // Update existing
+    // Update existing - only update fields that are provided
+    const updateData: any = {
+      updatedBy: user.sub,
+      updatedAt: new Date(),
+    };
+    if (d.baseRate !== undefined) updateData.baseRate = String(d.baseRate);
+    if (d.ratePerMile !== undefined) updateData.ratePerMile = String(d.ratePerMile);
+    if (d.ratePerMinute !== undefined) updateData.ratePerMinute = String(d.ratePerMinute);
+    if (d.taxPercent !== undefined) updateData.taxPercent = String(d.taxPercent);
+
     const [updated] = await db
       .update(vehiclePricing)
-      .set({
-        ...(d.baseRate !== undefined && { baseRate: String(d.baseRate) }),
-        ...(d.ratePerMile !== undefined && { ratePerMile: String(d.ratePerMile) }),
-        ...(d.ratePerMinute !== undefined && { ratePerMinute: String(d.ratePerMinute) }),
-        ...(d.taxPercent !== undefined && { taxPercent: String(d.taxPercent) }),
-        updatedBy: user.sub,
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(vehiclePricing.vehicleId, vehicleId))
       .returning();
     return c.json(updated);
   } else {
-    // Create new
+    // Create new - store provided values, leave others as NULL
+    const insertData: any = {
+      vehicleId,
+      updatedBy: user.sub,
+    };
+    if (d.baseRate !== undefined) insertData.baseRate = String(d.baseRate);
+    if (d.ratePerMile !== undefined) insertData.ratePerMile = String(d.ratePerMile);
+    if (d.ratePerMinute !== undefined) insertData.ratePerMinute = String(d.ratePerMinute);
+    if (d.taxPercent !== undefined) insertData.taxPercent = String(d.taxPercent);
+
     const [created] = await db
       .insert(vehiclePricing)
-      .values({
-        vehicleId,
-        ...(d.baseRate !== undefined && { baseRate: String(d.baseRate) }),
-        ...(d.ratePerMile !== undefined && { ratePerMile: String(d.ratePerMile) }),
-        ...(d.ratePerMinute !== undefined && { ratePerMinute: String(d.ratePerMinute) }),
-        ...(d.taxPercent !== undefined && { taxPercent: String(d.taxPercent) }),
-        updatedBy: user.sub,
-      })
+      .values(insertData)
       .returning();
     return c.json(created, 201);
   }

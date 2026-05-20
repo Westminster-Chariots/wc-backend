@@ -80,10 +80,11 @@ curl https://your-backend-url.onrender.com/api/v1/pricing/vehicles
 2. Click "Configuration" tab
 3. Scroll to "Vehicle-Specific Pricing"
 4. Change pricing values for any vehicle
-5. Values should auto-save (check browser console for success message)
-6. Refresh the page - values should persist
-7. Test "Clear custom pricing" button
-8. Go to "Calculator" tab and verify pricing calculations work
+5. Click "Save Pricing" button
+6. Check browser console for success message
+7. Refresh the page - values should persist
+8. Test "Clear" button to remove custom pricing
+9. Go to "Calculator" tab and verify pricing calculations work
 
 ---
 
