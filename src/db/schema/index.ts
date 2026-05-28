@@ -6,3 +6,4 @@ export * from "./bookings";
 export * from "./invoices";
 export * from "./pricing";
 export * from "./campaigns";
+export * from "./documents";
