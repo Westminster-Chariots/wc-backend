@@ -63,6 +63,8 @@ app.route("/api/v1/users", users);
 app.route("/api/v1/contact", contact);
 app.route("/api/v1/documents", documents);
 
+console.log("✓ Documents route registered at /api/v1/documents");
+
 serve({ fetch: app.fetch, port: env.PORT }, () => {
   console.log(`wc-backend running on port ${env.PORT}`);
 });
