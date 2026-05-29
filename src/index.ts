@@ -45,6 +45,15 @@ app.use(
 );
 
 app.get("/health", (c) => c.json({ status: "ok" }));
+app.get("/version", (c) => {
+  try {
+    const fs = require('fs');
+    const version = JSON.parse(fs.readFileSync('./version.json', 'utf8'));
+    return c.json(version);
+  } catch {
+    return c.json({ error: 'version.json not found' });
+  }
+});
 
 app.route("/api/v1/auth", auth);
 app.route("/api/v1/bookings", bookings);
