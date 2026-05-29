@@ -2,10 +2,11 @@ import { Hono } from "hono";
 import { db } from "../db";
 import { documents } from "../db/schema";
 import { eq, and, or, like, desc } from "drizzle-orm";
-import { authMiddleware } from "../middleware/auth";
+import { requireAuth, requireAdmin } from "../middleware/auth";
 import { z } from "zod";
+import type { JwtPayload } from "../lib/jwt";
 
-const app = new Hono();
+const router = new Hono<{ Variables: { user: JwtPayload } }>();
 
 const createDocumentSchema = z.object({
   documentType: z.enum(["driver_manifest", "client_invoice", "trip_confirmation"]),
@@ -18,7 +19,7 @@ const createDocumentSchema = z.object({
 });
 
 // Create a new document
-app.post("/", authMiddleware, async (c) => {
+router.post("/", requireAdmin, async (c) => {
   try {
     const body = await c.req.json();
     const validated = createDocumentSchema.parse(body);
@@ -40,7 +41,7 @@ app.post("/", authMiddleware, async (c) => {
 });
 
 // Get all documents with filters
-app.get("/", authMiddleware, async (c) => {
+router.get("/", requireAdmin, async (c) => {
   try {
     const { type, search, clientEmail, limit = "50", offset = "0" } = c.req.query();
     
@@ -82,7 +83,7 @@ app.get("/", authMiddleware, async (c) => {
 });
 
 // Get documents for current user (client view)
-app.get("/my-documents", authMiddleware, async (c) => {
+router.get("/my-documents", requireAuth, async (c) => {
   try {
     const user = c.get("user");
     
@@ -105,7 +106,7 @@ app.get("/my-documents", authMiddleware, async (c) => {
 });
 
 // Get a single document by ID
-app.get("/:id", authMiddleware, async (c) => {
+router.get("/:id", requireAuth, async (c) => {
   try {
     const { id } = c.param();
     
@@ -126,7 +127,7 @@ app.get("/:id", authMiddleware, async (c) => {
 });
 
 // Update a document
-app.patch("/:id", authMiddleware, async (c) => {
+router.patch("/:id", requireAdmin, async (c) => {
   try {
     const { id } = c.param();
     const body = await c.req.json();
@@ -152,7 +153,7 @@ app.patch("/:id", authMiddleware, async (c) => {
 });
 
 // Delete a document
-app.delete("/:id", authMiddleware, async (c) => {
+router.delete("/:id", requireAdmin, async (c) => {
   try {
     const { id } = c.param();
     
@@ -172,4 +173,4 @@ app.delete("/:id", authMiddleware, async (c) => {
   }
 });
 
-export default app;
+export default router;
