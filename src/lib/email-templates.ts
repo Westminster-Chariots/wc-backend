@@ -331,50 +331,114 @@ export function buildPaymentLinkEmail(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @media only screen and (max-width: 600px) {
+      .container { width: 100% !important; }
+      .content { padding: 24px 20px !important; }
+      .header { padding: 32px 20px !important; }
+    }
+  </style>
 </head>
-<body style="margin:0;padding:0;background:#f0f0f0;font-family:'Helvetica Neue',Arial,sans-serif;">
-  <div style="max-width:600px;margin:0 auto;background:#fff;">
-    <div style="background:#1a1a1a;padding:28px 32px;text-align:center;">
-      <h1 style="margin:0;color:#c8a45e;font-size:22px;letter-spacing:3px;">WESTMINSTER CHARIOTS</h1>
-      <p style="margin:6px 0 0;color:#999;font-size:10px;letter-spacing:2px;">Premium Chauffeur Services</p>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <div class="container" style="max-width:600px;margin:0 auto;background:#fff;">
+    <!-- Header -->
+    <div class="header" style="background:linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);padding:40px 32px;text-align:center;">
+      <h1 style="margin:0;color:#fff;font-size:28px;font-weight:700;letter-spacing:-0.5px;">Westminster Chariots</h1>
+      <p style="margin:8px 0 0;color:#dbeafe;font-size:14px;font-weight:500;">Premium Chauffeur Services</p>
     </div>
     
-    <div style="padding:36px 32px;">
-      <p style="margin:0 0 4px;color:#999;font-size:13px;">Hello ${clientName},</p>
-      <h2 style="margin:0 0 8px;color:#1a1a1a;font-size:26px;font-weight:700;">Complete Your Booking</h2>
-      <div style="width:50px;height:3px;background:#c8a45e;margin:0 0 24px;border-radius:2px;"></div>
-      
-      <p style="margin:0 0 12px;color:#333;font-size:15px;line-height:1.6;">
-        Your reservation has been confirmed and is ready for payment. Please complete your payment to finalize your booking.
-      </p>
-      
-      <div style="background:#f8f8f8;border:1px solid #e0e0e0;border-radius:8px;padding:20px;margin:24px 0;">
-        <p style="margin:0 0 12px;color:#666;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Reservation Details</p>
-        <p style="margin:0 0 8px;color:#333;font-size:14px;"><strong>Confirmation #:</strong> ${reservationNumber}</p>
-        <p style="margin:0 0 8px;color:#333;font-size:14px;"><strong>Date & Time:</strong> ${pickupDate} at ${pickupTime}</p>
-        <p style="margin:0 0 8px;color:#333;font-size:14px;"><strong>Pickup:</strong> ${pickupLocation}</p>
-        <p style="margin:0 0 8px;color:#333;font-size:14px;"><strong>Dropoff:</strong> ${dropoffLocation}</p>
-        <p style="margin:0 0 8px;color:#333;font-size:14px;"><strong>Vehicle:</strong> ${vehicleType.toUpperCase()}</p>
-        <div style="border-top:1px solid #e0e0e0;margin:16px 0;padding-top:16px;">
-          <p style="margin:0;color:#1a1a1a;font-size:20px;font-weight:700;">Total: <span style="color:#c8a45e;">$${finalPrice.toFixed(2)}</span></p>
-          <p style="margin:4px 0 0;color:#999;font-size:12px;">Includes gratuity, fees, and tolls</p>
+    <!-- Content -->
+    <div class="content" style="padding:40px 32px;">
+      <div style="text-align:center;margin-bottom:32px;">
+        <div style="display:inline-block;background:#dbeafe;border-radius:50%;width:64px;height:64px;line-height:64px;margin-bottom:16px;">
+          <span style="font-size:32px;">💳</span>
         </div>
+        <h2 style="margin:0 0 8px;color:#1e293b;font-size:24px;font-weight:700;">Complete Your Booking</h2>
+        <p style="margin:0;color:#64748b;font-size:15px;">Confirmation #: <strong style="color:#1e40af;">${reservationNumber}</strong></p>
       </div>
       
-      <div style="text-align:center;margin:36px 0 16px;">
-        <a href="${paymentLink}" style="display:inline-block;background:#c8a45e;color:#fff;padding:14px 44px;text-decoration:none;border-radius:6px;font-size:15px;font-weight:600;">
+      <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">
+        Hello <strong>${clientName}</strong>,
+      </p>
+      
+      <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">
+        Great news! Your chauffeur is available and ready to serve you. Please complete your payment to finalize your booking.
+      </p>
+      
+      <!-- Trip Details Card -->
+      <div style="background:#f8fafc;border:2px solid #e2e8f0;border-radius:12px;padding:24px;margin:24px 0;">
+        <h3 style="margin:0 0 16px;color:#1e293b;font-size:16px;font-weight:600;">Trip Details</h3>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="padding:8px 0;color:#64748b;font-size:14px;width:120px;">Date & Time</td>
+            <td style="padding:8px 0;color:#1e293b;font-size:14px;font-weight:600;">${pickupDate} at ${pickupTime}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#64748b;font-size:14px;">Pickup</td>
+            <td style="padding:8px 0;color:#1e293b;font-size:14px;">${pickupLocation}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#64748b;font-size:14px;">Dropoff</td>
+            <td style="padding:8px 0;color:#1e293b;font-size:14px;">${dropoffLocation}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#64748b;font-size:14px;">Vehicle</td>
+            <td style="padding:8px 0;color:#1e293b;font-size:14px;text-transform:uppercase;">${vehicleType}</td>
+          </tr>
+        </table>
+      </div>
+      
+      <!-- Price Card -->
+      <div style="background:linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);border:2px solid #3b82f6;border-radius:12px;padding:24px;margin:24px 0;text-align:center;">
+        <p style="margin:0 0 8px;color:#64748b;font-size:14px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;">Total Amount</p>
+        <p style="margin:0 0 4px;color:#1e40af;font-size:36px;font-weight:700;line-height:1;">$${finalPrice.toFixed(2)}</p>
+        <p style="margin:0;color:#64748b;font-size:12px;">Includes gratuity, fees, and tolls</p>
+      </div>
+      
+      <!-- CTA Button -->
+      <div style="text-align:center;margin:32px 0;">
+        <a href="${paymentLink}" style="display:inline-block;background:#3b82f6;color:#fff;padding:16px 48px;text-decoration:none;border-radius:8px;font-size:16px;font-weight:600;box-shadow:0 4px 6px rgba(59,130,246,0.3);">
           Pay Now - $${finalPrice.toFixed(2)}
         </a>
       </div>
       
-      <p style="margin:24px 0 0;color:#999;font-size:13px;">
-        Once payment is received, you'll receive a confirmation email with your chauffeur assignment details.
+      <p style="margin:24px 0;color:#64748b;font-size:13px;text-align:center;line-height:1.6;">
+        Secure payment powered by Clover. Your payment information is encrypted and protected.
       </p>
+      
+      <!-- What Happens After Payment -->
+      <div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:20px;margin:24px 0;border-radius:8px;">
+        <h3 style="margin:0 0 12px;color:#1e40af;font-size:14px;font-weight:600;">What Happens After Payment</h3>
+        <p style="margin:0 0 8px;color:#475569;font-size:13px;line-height:1.6;">
+          ✓ You'll receive an instant confirmation email
+        </p>
+        <p style="margin:0 0 8px;color:#475569;font-size:13px;line-height:1.6;">
+          ✓ Your chauffeur will be assigned and you'll receive their details
+        </p>
+        <p style="margin:0;color:#475569;font-size:13px;line-height:1.6;">
+          ✓ On ride day, your chauffeur will arrive 15 minutes early
+        </p>
+      </div>
+      
+      <!-- Support Info -->
+      <div style="background:#f8fafc;border-radius:8px;padding:20px;margin:24px 0;">
+        <h3 style="margin:0 0 12px;color:#1e293b;font-size:14px;font-weight:600;">Need Assistance?</h3>
+        <p style="margin:0 0 8px;color:#475569;font-size:14px;">
+          📞 <strong>Phone:</strong> <a href="tel:+15714266338" style="color:#3b82f6;text-decoration:none;">+1 (571) 426-6338</a>
+        </p>
+        <p style="margin:0 0 8px;color:#475569;font-size:14px;">
+          ✉️ <strong>Email:</strong> <a href="mailto:book@westminsterchariots.com" style="color:#3b82f6;text-decoration:none;">book@westminsterchariots.com</a>
+        </p>
+        <p style="margin:0;color:#475569;font-size:14px;">
+          🕐 <strong>Hours:</strong> 24/7 Customer Support
+        </p>
+      </div>
     </div>
     
-    <div style="background:#fafafa;padding:24px 32px;text-align:center;border-top:1px solid #eee;">
-      <p style="margin:0;color:#999;font-size:11px;">Westminster Chariots · Triangle, VA · Washington DC Metro</p>
-      <p style="margin:8px 0 0;color:#999;font-size:11px;">+1 (571) 426-6338 · book@westminsterchariots.com</p>
+    <!-- Footer -->
+    <div style="background:#f8fafc;padding:24px 32px;text-align:center;border-top:1px solid #e2e8f0;">
+      <p style="margin:0 0 8px;color:#64748b;font-size:12px;">Westminster Chariots · Triangle, VA · Washington DC Metro</p>
+      <p style="margin:0;color:#64748b;font-size:12px;">Premium Chauffeur Services Since 2020</p>
     </div>
   </div>
 </body>
