@@ -511,57 +511,165 @@ export function buildManifestEmail(
   vehicleType: string,
   specialRequests: string | null
 ) {
+  // Calculate spot time (15 minutes before pickup)
+  const [hours, minutes] = pickupTime.split(':');
+  const pickupMinutes = parseInt(hours) * 60 + parseInt(minutes);
+  const spotMinutes = pickupMinutes - 15;
+  const spotHours = Math.floor(spotMinutes / 60);
+  const spotMins = spotMinutes % 60;
+  const spotTime = `${String(spotHours).padStart(2, '0')}:${String(spotMins).padStart(2, '0')}`;
+
   return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @media only screen and (max-width: 600px) {
+      .container { width: 100% !important; }
+      .content { padding: 24px 16px !important; }
+      .manifest-card { padding: 16px !important; }
+    }
+  </style>
 </head>
-<body style="margin:0;padding:0;background:#f0f0f0;font-family:'Helvetica Neue',Arial,sans-serif;">
-  <div style="max-width:600px;margin:0 auto;background:#fff;">
-    <div style="background:#1a1a1a;padding:28px 32px;text-align:center;">
-      <h1 style="margin:0;color:#c8a45e;font-size:22px;letter-spacing:3px;">WESTMINSTER CHARIOTS</h1>
-      <p style="margin:6px 0 0;color:#999;font-size:10px;letter-spacing:2px;">Trip Manifest</p>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <div class="container" style="max-width:650px;margin:0 auto;background:#0a0a0a;">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg, #1e293b 0%, #334155 100%);padding:32px;text-align:center;border-bottom:3px solid #3b82f6;">
+      <h1 style="margin:0;color:#fff;font-size:24px;font-weight:700;letter-spacing:-0.5px;">🚗 New Trip Assignment</h1>
+      <p style="margin:8px 0 0;color:#cbd5e1;font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;">Driver Manifest</p>
     </div>
     
-    <div style="padding:36px 32px;">
-      <p style="margin:0 0 4px;color:#999;font-size:13px;">Hello ${driverName},</p>
-      <h2 style="margin:0 0 8px;color:#1a1a1a;font-size:26px;font-weight:700;">New Assignment</h2>
-      <div style="width:50px;height:3px;background:#c8a45e;margin:0 0 24px;border-radius:2px;"></div>
+    <!-- Content -->
+    <div class="content" style="padding:32px;">
+      <div style="text-align:center;margin-bottom:24px;">
+        <div style="display:inline-block;background:#1e293b;border:2px solid #3b82f6;border-radius:50%;width:64px;height:64px;line-height:64px;margin-bottom:12px;">
+          <span style="font-size:28px;">📋</span>
+        </div>
+        <h2 style="margin:0 0 6px;color:#f0f0f0;font-size:20px;font-weight:700;">Trip Manifest</h2>
+        <p style="margin:0;color:#8c8c8c;font-size:13px;">Reservation #: <strong style="color:#3b82f6;font-size:15px;">${reservationNumber}</strong></p>
+      </div>
       
-      <p style="margin:0 0 12px;color:#333;font-size:15px;line-height:1.6;">
-        You have been assigned to the following trip. Please review the details carefully.
+      <p style="margin:0 0 20px;color:#d0d0d0;font-size:14px;line-height:1.6;">
+        Hello <strong style="color:#f0f0f0;">${driverName}</strong>,
       </p>
       
-      <div style="background:#f8f8f8;border-left:3px solid #c8a45e;padding:20px;margin:24px 0;">
-        <p style="margin:0 0 12px;color:#666;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Trip Details</p>
-        <p style="margin:0 0 8px;color:#333;font-size:14px;"><strong>Confirmation #:</strong> ${reservationNumber}</p>
-        <p style="margin:0 0 8px;color:#333;font-size:14px;"><strong>Client:</strong> ${clientName}</p>
-        <p style="margin:0 0 8px;color:#333;font-size:14px;"><strong>Phone:</strong> ${clientPhone}</p>
-        <p style="margin:0 0 16px;color:#333;font-size:14px;"><strong>Vehicle:</strong> ${vehicleType.toUpperCase()}</p>
+      <p style="margin:0 0 24px;color:#d0d0d0;font-size:14px;line-height:1.6;">
+        You have been assigned to the following trip. Please review all details carefully and arrive at the pickup location 15 minutes early.
+      </p>
+      
+      <!-- MANIFEST CARD -->
+      <div class="manifest-card" style="background:#1a1a1a;border:2px solid #323232;border-radius:12px;padding:24px;margin:24px 0;">
         
-        <div style="border-top:1px solid #ddd;padding-top:16px;margin-top:16px;">
-          <p style="margin:0 0 8px;color:#c8a45e;font-size:13px;font-weight:600;">📅 ${pickupDate} at ${pickupTime}</p>
-          <p style="margin:0 0 8px;color:#333;font-size:14px;"><strong>Pickup:</strong> ${pickupLocation}</p>
-          <p style="margin:0;color:#333;font-size:14px;"><strong>Dropoff:</strong> ${dropoffLocation}</p>
+        <!-- Reservation Details Section -->
+        <div style="border-bottom:1px solid #3b82f6;padding-bottom:16px;margin-bottom:16px;">
+          <h3 style="margin:0 0 12px;color:#3b82f6;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">■ Reservation Details</h3>
+          <table style="width:100%;border-collapse:collapse;">
+            <tr>
+              <td style="padding:6px 0;color:#8c8c8c;font-size:12px;width:120px;">Pick-up Date</td>
+              <td style="padding:6px 0;color:#f0f0f0;font-size:12px;font-weight:600;">${pickupDate}</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0;color:#8c8c8c;font-size:12px;">Pick-up Time</td>
+              <td style="padding:6px 0;color:#f0f0f0;font-size:12px;font-weight:600;">${pickupTime}</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0;color:#8c8c8c;font-size:12px;">Spot Time</td>
+              <td style="padding:6px 0;color:#3b82f6;font-size:13px;font-weight:700;">${spotTime} (15 min early)</td>
+            </tr>
+          </table>
+        </div>
+        
+        <!-- Passenger Information Section -->
+        <div style="border-bottom:1px solid #323232;padding-bottom:16px;margin-bottom:16px;">
+          <h3 style="margin:0 0 12px;color:#3b82f6;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">■ Passenger Information</h3>
+          <table style="width:100%;border-collapse:collapse;">
+            <tr>
+              <td style="padding:6px 0;color:#8c8c8c;font-size:12px;width:120px;">Passenger</td>
+              <td style="padding:6px 0;color:#f0f0f0;font-size:12px;font-weight:600;">${clientName}</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0;color:#8c8c8c;font-size:12px;">Phone</td>
+              <td style="padding:6px 0;color:#f0f0f0;font-size:12px;font-weight:600;">${clientPhone}</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0;color:#8c8c8c;font-size:12px;">Vehicle Type</td>
+              <td style="padding:6px 0;color:#f0f0f0;font-size:12px;font-weight:600;text-transform:uppercase;">${vehicleType}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <!-- Routing Information Section -->
+        <div style="margin-bottom:16px;">
+          <h3 style="margin:0 0 12px;color:#3b82f6;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">■ Routing Information</h3>
+          
+          <!-- Pickup Box -->
+          <div style="background:#1e1e1e;border:1px solid #323232;border-radius:8px;padding:14px;margin-bottom:12px;">
+            <p style="margin:0 0 6px;color:#3b82f6;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">📍 PICK-UP</p>
+            <p style="margin:0;color:#f0f0f0;font-size:13px;font-weight:600;line-height:1.5;">${pickupLocation}</p>
+          </div>
+          
+          <!-- Arrow -->
+          <div style="text-align:center;margin:8px 0;">
+            <span style="color:#3b82f6;font-size:20px;">↓</span>
+          </div>
+          
+          <!-- Dropoff Box -->
+          <div style="background:#1e1e1e;border:1px solid #323232;border-radius:8px;padding:14px;">
+            <p style="margin:0 0 6px;color:#3b82f6;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">🎯 DROP-OFF</p>
+            <p style="margin:0;color:#f0f0f0;font-size:13px;font-weight:600;line-height:1.5;">${dropoffLocation}</p>
+          </div>
         </div>
         
         ${specialRequests ? `
-        <div style="border-top:1px solid #ddd;padding-top:16px;margin-top:16px;">
-          <p style="margin:0 0 8px;color:#666;font-size:12px;font-weight:600;">Special Requests:</p>
-          <p style="margin:0;color:#333;font-size:14px;font-style:italic;">${specialRequests}</p>
+        <!-- Special Requests Section -->
+        <div style="border-top:1px solid #323232;padding-top:16px;">
+          <h3 style="margin:0 0 8px;color:#3b82f6;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">■ Special Requests</h3>
+          <p style="margin:0;color:#f0f0f0;font-size:12px;line-height:1.6;font-style:italic;">${specialRequests}</p>
         </div>
         ` : ''}
       </div>
       
-      <p style="margin:24px 0 0;color:#999;font-size:13px;">
-        Please confirm receipt and contact dispatch if you have any questions.
-      </p>
+      <!-- Important Reminders -->
+      <div style="background:#1e293b;border-left:4px solid #3b82f6;padding:16px;margin:24px 0;border-radius:8px;">
+        <h3 style="margin:0 0 12px;color:#3b82f6;font-size:13px;font-weight:600;">⚠️ Important Reminders</h3>
+        <ul style="margin:0;padding-left:20px;color:#cbd5e1;font-size:12px;line-height:1.8;">
+          <li>Arrive at pickup location <strong style="color:#3b82f6;">15 minutes early</strong> (spot time)</li>
+          <li>Ensure vehicle is clean and presentable</li>
+          <li>Confirm passenger identity before departure</li>
+          <li>Maintain professional appearance and conduct</li>
+          <li>Contact dispatch immediately if any issues arise</li>
+        </ul>
+      </div>
+      
+      <!-- Wait Time Policy -->
+      <div style="background:#1a1a1a;border:1px solid #323232;border-radius:8px;padding:16px;margin:24px 0;">
+        <h3 style="margin:0 0 8px;color:#f59e0b;font-size:12px;font-weight:600;">⏱️ Wait Time Policy</h3>
+        <p style="margin:0;color:#8c8c8c;font-size:11px;line-height:1.6;">
+          <strong style="color:#f0f0f0;">Complimentary wait:</strong> 15 minutes<br>
+          <strong style="color:#f0f0f0;">After 15 minutes:</strong> $95/hour applies
+        </p>
+      </div>
+      
+      <!-- Contact Information -->
+      <div style="background:#1a1a1a;border-radius:8px;padding:16px;margin:24px 0;">
+        <h3 style="margin:0 0 12px;color:#f0f0f0;font-size:13px;font-weight:600;">Need Assistance?</h3>
+        <p style="margin:0 0 6px;color:#d0d0d0;font-size:12px;">
+          📞 <strong>Dispatch:</strong> <a href="tel:+15714266338" style="color:#3b82f6;text-decoration:none;">+1 (571) 426-6338</a>
+        </p>
+        <p style="margin:0 0 6px;color:#d0d0d0;font-size:12px;">
+          ✉️ <strong>Email:</strong> <a href="mailto:dispatch@westminsterchariots.com" style="color:#3b82f6;text-decoration:none;">dispatch@westminsterchariots.com</a>
+        </p>
+        <p style="margin:0;color:#d0d0d0;font-size:12px;">
+          🕐 <strong>Hours:</strong> 24/7 Dispatch Support
+        </p>
+      </div>
     </div>
     
-    <div style="background:#fafafa;padding:24px 32px;text-align:center;border-top:1px solid #eee;">
-      <p style="margin:0;color:#999;font-size:11px;">Westminster Chariots Dispatch</p>
-      <p style="margin:8px 0 0;color:#999;font-size:11px;">+1 (571) 426-6338 · dispatch@westminsterchariots.com</p>
+    <!-- Footer -->
+    <div style="background:#1e293b;padding:24px 32px;text-align:center;border-top:2px solid #3b82f6;">
+      <p style="margin:0 0 6px;color:#cbd5e1;font-size:11px;font-weight:500;">Westminster Chariots — Travel in Luxury, Arrive in Style</p>
+      <p style="margin:0;color:#64748b;font-size:10px;">Confidential — For authorized use only</p>
     </div>
   </div>
 </body>
