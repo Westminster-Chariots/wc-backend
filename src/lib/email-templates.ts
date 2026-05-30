@@ -1,3 +1,267 @@
+// ─── Step 1: Booking Request Confirmation ──────────────────────────────────
+
+export function buildClientBookingRequestEmail(
+  clientName: string,
+  reservationNumber: string,
+  pickupDate: string,
+  pickupTime: string,
+  pickupLocation: string,
+  dropoffLocation: string,
+  vehicleType: string,
+  bookingUrl: string
+) {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @media only screen and (max-width: 600px) {
+      .container { width: 100% !important; }
+      .content { padding: 24px 20px !important; }
+      .header { padding: 32px 20px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <div class="container" style="max-width:600px;margin:0 auto;background:#fff;">
+    <!-- Header -->
+    <div class="header" style="background:linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);padding:40px 32px;text-align:center;">
+      <h1 style="margin:0;color:#fff;font-size:28px;font-weight:700;letter-spacing:-0.5px;">Westminster Chariots</h1>
+      <p style="margin:8px 0 0;color:#dbeafe;font-size:14px;font-weight:500;">Premium Chauffeur Services</p>
+    </div>
+    
+    <!-- Content -->
+    <div class="content" style="padding:40px 32px;">
+      <div style="text-align:center;margin-bottom:32px;">
+        <div style="display:inline-block;background:#dbeafe;border-radius:50%;width:64px;height:64px;line-height:64px;margin-bottom:16px;">
+          <span style="font-size:32px;">✓</span>
+        </div>
+        <h2 style="margin:0 0 8px;color:#1e293b;font-size:24px;font-weight:700;">Booking Request Received</h2>
+        <p style="margin:0;color:#64748b;font-size:15px;">Confirmation #: <strong style="color:#1e40af;">${reservationNumber}</strong></p>
+      </div>
+      
+      <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">
+        Hello <strong>${clientName}</strong>,
+      </p>
+      
+      <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">
+        Thank you for choosing Westminster Chariots. We've received your booking request and our dispatch team is reviewing it now.
+      </p>
+      
+      <!-- Trip Details Card -->
+      <div style="background:#f8fafc;border:2px solid #e2e8f0;border-radius:12px;padding:24px;margin:24px 0;">
+        <h3 style="margin:0 0 16px;color:#1e293b;font-size:16px;font-weight:600;">Trip Details</h3>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="padding:8px 0;color:#64748b;font-size:14px;width:120px;">Date & Time</td>
+            <td style="padding:8px 0;color:#1e293b;font-size:14px;font-weight:600;">${pickupDate} at ${pickupTime}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#64748b;font-size:14px;">Pickup</td>
+            <td style="padding:8px 0;color:#1e293b;font-size:14px;">${pickupLocation}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#64748b;font-size:14px;">Dropoff</td>
+            <td style="padding:8px 0;color:#1e293b;font-size:14px;">${dropoffLocation}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#64748b;font-size:14px;">Vehicle</td>
+            <td style="padding:8px 0;color:#1e293b;font-size:14px;text-transform:uppercase;">${vehicleType}</td>
+          </tr>
+        </table>
+      </div>
+      
+      <!-- What Happens Next -->
+      <div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:20px;margin:24px 0;border-radius:8px;">
+        <h3 style="margin:0 0 16px;color:#1e40af;font-size:16px;font-weight:600;">What Happens Next</h3>
+        <div style="margin-bottom:12px;">
+          <div style="display:inline-block;background:#3b82f6;color:#fff;border-radius:50%;width:24px;height:24px;text-align:center;line-height:24px;font-size:12px;font-weight:700;margin-right:8px;vertical-align:middle;">1</div>
+          <span style="color:#475569;font-size:14px;vertical-align:middle;"><strong>Availability Review</strong> — Our dispatch team confirms chauffeur availability</span>
+        </div>
+        <div style="margin-bottom:12px;">
+          <div style="display:inline-block;background:#3b82f6;color:#fff;border-radius:50%;width:24px;height:24px;text-align:center;line-height:24px;font-size:12px;font-weight:700;margin-right:8px;vertical-align:middle;">2</div>
+          <span style="color:#475569;font-size:14px;vertical-align:middle;"><strong>Payment Link</strong> — You'll receive a secure payment link via email</span>
+        </div>
+        <div style="margin-bottom:12px;">
+          <div style="display:inline-block;background:#3b82f6;color:#fff;border-radius:50%;width:24px;height:24px;text-align:center;line-height:24px;font-size:12px;font-weight:700;margin-right:8px;vertical-align:middle;">3</div>
+          <span style="color:#475569;font-size:14px;vertical-align:middle;"><strong>Chauffeur Assignment</strong> — A professional chauffeur is assigned with their details</span>
+        </div>
+        <div>
+          <div style="display:inline-block;background:#3b82f6;color:#fff;border-radius:50%;width:24px;height:24px;text-align:center;line-height:24px;font-size:12px;font-weight:700;margin-right:8px;vertical-align:middle;">4</div>
+          <span style="color:#475569;font-size:14px;vertical-align:middle;"><strong>Ride Day</strong> — Your chauffeur arrives 15 minutes early for a seamless experience</span>
+        </div>
+      </div>
+      
+      <!-- CTA Button -->
+      <div style="text-align:center;margin:32px 0;">
+        <a href="${bookingUrl}" style="display:inline-block;background:#3b82f6;color:#fff;padding:14px 32px;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;box-shadow:0 4px 6px rgba(59,130,246,0.2);">
+          View Booking Details
+        </a>
+      </div>
+      
+      <!-- Support Info -->
+      <div style="background:#f8fafc;border-radius:8px;padding:20px;margin:24px 0;">
+        <h3 style="margin:0 0 12px;color:#1e293b;font-size:14px;font-weight:600;">Need Assistance?</h3>
+        <p style="margin:0 0 8px;color:#475569;font-size:14px;">
+          📞 <strong>Phone:</strong> <a href="tel:+15714266338" style="color:#3b82f6;text-decoration:none;">+1 (571) 426-6338</a>
+        </p>
+        <p style="margin:0 0 8px;color:#475569;font-size:14px;">
+          ✉️ <strong>Email:</strong> <a href="mailto:book@westminsterchariots.com" style="color:#3b82f6;text-decoration:none;">book@westminsterchariots.com</a>
+        </p>
+        <p style="margin:0;color:#475569;font-size:14px;">
+          🕐 <strong>Hours:</strong> 24/7 Customer Support
+        </p>
+      </div>
+    </div>
+    
+    <!-- Footer -->
+    <div style="background:#f8fafc;padding:24px 32px;text-align:center;border-top:1px solid #e2e8f0;">
+      <p style="margin:0 0 8px;color:#64748b;font-size:12px;">Westminster Chariots · Triangle, VA · Washington DC Metro</p>
+      <p style="margin:0;color:#64748b;font-size:12px;">Premium Chauffeur Services Since 2020</p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+export function buildAdminBookingNotificationEmail(
+  reservationNumber: string,
+  clientName: string,
+  pickupDate: string,
+  pickupTime: string,
+  pickupLocation: string,
+  dropoffLocation: string,
+  vehicleType: string,
+  gatekeeperStatus: string,
+  bookingId: string,
+  adminDashboardUrl: string
+) {
+  const urgencyColor = 
+    gatekeeperStatus === "emergency" ? "#dc2626" :
+    gatekeeperStatus === "urgent" ? "#f59e0b" : "#3b82f6";
+  
+  const urgencyBg = 
+    gatekeeperStatus === "emergency" ? "#fee2e2" :
+    gatekeeperStatus === "urgent" ? "#fef3c7" : "#dbeafe";
+  
+  const urgencyLabel = 
+    gatekeeperStatus === "emergency" ? "🚨 EMERGENCY" :
+    gatekeeperStatus === "urgent" ? "⚡ URGENT" : "📋 STANDARD";
+
+  const urgencyMessage = 
+    gatekeeperStatus === "emergency" ? "Pickup in less than 4 hours - Immediate action required!" :
+    gatekeeperStatus === "urgent" ? "Pickup in less than 12 hours - Prompt action needed." : 
+    "Standard booking - Review at your earliest convenience.";
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @media only screen and (max-width: 600px) {
+      .container { width: 100% !important; }
+      .content { padding: 24px 20px !important; }
+      .header { padding: 28px 20px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <div class="container" style="max-width:600px;margin:0 auto;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+    <!-- Header -->
+    <div class="header" style="background:linear-gradient(135deg, #1e293b 0%, #334155 100%);padding:32px;text-align:center;">
+      <h1 style="margin:0;color:#fff;font-size:24px;font-weight:700;letter-spacing:-0.5px;">🔔 New Booking Request</h1>
+      <p style="margin:8px 0 0;color:#cbd5e1;font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;">Admin Notification</p>
+    </div>
+    
+    <!-- Urgency Badge -->
+    <div style="background:${urgencyBg};padding:16px 32px;text-align:center;border-bottom:3px solid ${urgencyColor};">
+      <div style="color:${urgencyColor};font-size:16px;font-weight:700;margin-bottom:4px;">${urgencyLabel}</div>
+      <div style="color:${urgencyColor};font-size:12px;font-weight:500;">${urgencyMessage}</div>
+    </div>
+    
+    <!-- Content -->
+    <div class="content" style="padding:32px;">
+      <div style="margin-bottom:24px;">
+        <h2 style="margin:0 0 8px;color:#1e293b;font-size:20px;font-weight:700;">Booking Request Details</h2>
+        <p style="margin:0;color:#64748b;font-size:14px;">Confirmation #: <strong style="color:#3b82f6;font-size:15px;">${reservationNumber}</strong></p>
+      </div>
+      
+      <!-- Booking Info Card -->
+      <div style="background:#f8fafc;border:2px solid #e2e8f0;border-radius:12px;padding:24px;margin:24px 0;">
+        <h3 style="margin:0 0 16px;color:#1e293b;font-size:15px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Trip Information</h3>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="padding:10px 0;color:#64748b;font-size:14px;width:140px;border-bottom:1px solid #e2e8f0;vertical-align:top;">Client</td>
+            <td style="padding:10px 0;color:#1e293b;font-size:14px;font-weight:600;border-bottom:1px solid #e2e8f0;">${clientName}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 0;color:#64748b;font-size:14px;border-bottom:1px solid #e2e8f0;vertical-align:top;">Date & Time</td>
+            <td style="padding:10px 0;color:#1e293b;font-size:14px;font-weight:600;border-bottom:1px solid #e2e8f0;">${pickupDate} at ${pickupTime}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 0;color:#64748b;font-size:14px;border-bottom:1px solid #e2e8f0;vertical-align:top;">Pickup</td>
+            <td style="padding:10px 0;color:#1e293b;font-size:14px;border-bottom:1px solid #e2e8f0;">${pickupLocation}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 0;color:#64748b;font-size:14px;border-bottom:1px solid #e2e8f0;vertical-align:top;">Dropoff</td>
+            <td style="padding:10px 0;color:#1e293b;font-size:14px;border-bottom:1px solid #e2e8f0;">${dropoffLocation}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 0;color:#64748b;font-size:14px;vertical-align:top;">Vehicle</td>
+            <td style="padding:10px 0;color:#1e293b;font-size:14px;font-weight:600;text-transform:uppercase;">${vehicleType}</td>
+          </tr>
+        </table>
+      </div>
+      
+      <!-- Action Required -->
+      <div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:20px;margin:24px 0;border-radius:8px;">
+        <h3 style="margin:0 0 8px;color:#1e40af;font-size:14px;font-weight:600;">⚡ Action Required</h3>
+        <p style="margin:0;color:#475569;font-size:14px;line-height:1.6;">
+          Review this booking request, confirm chauffeur availability, and send the payment link to the client.
+        </p>
+      </div>
+      
+      <!-- CTA Button -->
+      <div style="text-align:center;margin:32px 0;">
+        <a href="${adminDashboardUrl}/admin/bookings/${bookingId}" style="display:inline-block;background:#3b82f6;color:#fff;padding:16px 40px;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;box-shadow:0 4px 6px rgba(59,130,246,0.25);transition:all 0.2s;">
+          View in Admin Dashboard →
+        </a>
+      </div>
+      
+      <!-- Quick Actions Checklist -->
+      <div style="background:#f8fafc;border-radius:8px;padding:20px;margin:24px 0;border:1px solid #e2e8f0;">
+        <h3 style="margin:0 0 16px;color:#1e293b;font-size:14px;font-weight:600;">📋 Quick Actions Checklist</h3>
+        <div style="margin-bottom:10px;padding-left:4px;">
+          <span style="color:#3b82f6;font-size:16px;margin-right:8px;">☐</span>
+          <span style="color:#475569;font-size:13px;line-height:1.6;">Confirm chauffeur availability</span>
+        </div>
+        <div style="margin-bottom:10px;padding-left:4px;">
+          <span style="color:#3b82f6;font-size:16px;margin-right:8px;">☐</span>
+          <span style="color:#475569;font-size:13px;line-height:1.6;">Review trip details and special requests</span>
+        </div>
+        <div style="margin-bottom:10px;padding-left:4px;">
+          <span style="color:#3b82f6;font-size:16px;margin-right:8px;">☐</span>
+          <span style="color:#475569;font-size:13px;line-height:1.6;">Send payment link to client</span>
+        </div>
+        <div style="padding-left:4px;">
+          <span style="color:#3b82f6;font-size:16px;margin-right:8px;">☐</span>
+          <span style="color:#475569;font-size:13px;line-height:1.6;">Assign chauffeur once payment is received</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Footer -->
+    <div style="background:#1e293b;padding:24px 32px;text-align:center;border-top:1px solid #0f172a;">
+      <p style="margin:0 0 8px;color:#cbd5e1;font-size:12px;font-weight:500;">Westminster Chariots Admin Dashboard</p>
+      <p style="margin:0;color:#64748b;font-size:11px;">This is an automated notification for administrators only</p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
 export function buildDriverAccountEmail(driverName: string, email: string, tempPassword: string, loginUrl: string) {
   return `<!DOCTYPE html>
 <html>

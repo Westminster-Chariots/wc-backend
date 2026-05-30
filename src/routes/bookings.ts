@@ -5,7 +5,7 @@ import { Resend } from "resend";
 import { db } from "../db";
 import { bookings, auditLog, drivers, profiles } from "../db/schema";
 import { requireAuth, requireAdmin } from "../middleware/auth";
-import { buildPaymentLinkEmail, buildManifestEmail, buildCancellationEmail } from "../lib/email-templates";
+import { buildPaymentLinkEmail, buildManifestEmail, buildCancellationEmail, buildClientBookingRequestEmail, buildAdminBookingNotificationEmail } from "../lib/email-templates";
 import { buildBookingEmailHtml } from "../lib/email";
 import { env } from "../lib/env";
 import { notifyBookingUpdate } from "../lib/pusher";
@@ -254,11 +254,21 @@ router.post("/", requireAuth, async (c) => {
 
     // Send confirmation email to customer
     try {
+      const bookingUrl = `${env.FRONTEND_URL}/account/bookings/${primary.id}`;
       await resend.emails.send({
         from: "Westminster Chariots <book@mail.westminsterchariots.com>",
         to: clientEmail,
-        subject: `Booking Confirmation — ${reservationNumber}`,
-        html: buildBookingEmailHtml(primary, "pending"),
+        subject: `Booking Request Received — ${reservationNumber}`,
+        html: buildClientBookingRequestEmail(
+          clientName,
+          reservationNumber,
+          d.pickupDate,
+          d.pickupTime,
+          d.pickup,
+          d.dropoff,
+          d.vehicleType,
+          bookingUrl
+        ),
       });
       console.log("Customer confirmation email sent to:", clientEmail);
     } catch (emailError: any) {
@@ -269,12 +279,24 @@ router.post("/", requireAuth, async (c) => {
     // Send notification email to admins
     try {
       const adminEmails = ["admin@westminsterchariots.com", "westminsterchariots@gmail.com"];
+      const adminDashboardUrl = env.FRONTEND_URL;
       const emailPromises = adminEmails.map(adminEmail => 
         resend.emails.send({
           from: "Westminster Chariots <book@mail.westminsterchariots.com>",
           to: adminEmail,
-          subject: `New Booking Request — ${reservationNumber}`,
-          html: buildBookingEmailHtml(primary, "pending"),
+          subject: `New Booking Request — ${reservationNumber} — ${gkStatus.toUpperCase()}`,
+          html: buildAdminBookingNotificationEmail(
+            reservationNumber,
+            clientName,
+            d.pickupDate,
+            d.pickupTime,
+            d.pickup,
+            d.dropoff,
+            d.vehicleType,
+            gkStatus,
+            primary.id,
+            adminDashboardUrl
+          ),
         })
       );
       await Promise.all(emailPromises);
