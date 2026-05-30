@@ -470,14 +470,15 @@ router.delete("/:id", requireAdmin, async (c) => {
 // POST /api/v1/bookings/:id/send-payment-link — admin only
 router.post("/:id/send-payment-link", requireAdmin, async (c) => {
   const user = c.get("user");
-  const body = z.object({ finalPrice: z.number() }).safeParse(await c.req.json());
+  const body = z.object({ 
+    finalPrice: z.number(),
+    paymentLink: z.string().url(),
+    emailMessage: z.string().optional()
+  }).safeParse(await c.req.json());
   if (!body.success) return c.json({ error: body.error.flatten() }, 400);
 
   const booking = await db.query.bookings.findFirst({ where: eq(bookings.id, c.req.param("id")) });
   if (!booking) return c.json({ error: "Not found" }, 404);
-
-  // TODO: Generate Stripe payment link
-  const paymentLink = `${env.FRONTEND_URL}/book/checkout?booking=${booking.id}`;
 
   // Send email with payment link
   try {
@@ -494,7 +495,8 @@ router.post("/:id/send-payment-link", requireAdmin, async (c) => {
         booking.dropoffLocation,
         booking.vehicleType,
         body.data.finalPrice,
-        paymentLink
+        body.data.paymentLink,
+        body.data.emailMessage
       ),
     });
     console.log("Payment link email sent:", result);
@@ -516,6 +518,7 @@ router.post("/:id/send-payment-link", requireAdmin, async (c) => {
   await writeAudit("payment_link_sent", booking.id, user.sub, {
     reservationNumber: booking.reservationNumber,
     finalPrice: body.data.finalPrice,
+    paymentLink: body.data.paymentLink,
   });
 
   return c.json({ message: "Payment link sent" });

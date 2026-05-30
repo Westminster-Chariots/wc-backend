@@ -324,8 +324,11 @@ export function buildPaymentLinkEmail(
   dropoffLocation: string,
   vehicleType: string,
   finalPrice: number,
-  paymentLink: string
+  paymentLink: string,
+  customMessage?: string
 ) {
+  const emailMessage = customMessage || `Great news! Your chauffeur is available and ready to serve you. Please complete your payment to finalize your booking.`;
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -362,7 +365,7 @@ export function buildPaymentLinkEmail(
       </p>
       
       <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">
-        Great news! Your chauffeur is available and ready to serve you. Please complete your payment to finalize your booking.
+        ${emailMessage}
       </p>
       
       <!-- Trip Details Card -->
