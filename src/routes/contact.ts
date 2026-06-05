@@ -60,7 +60,7 @@ contact.post("/", async (c) => {
 
     await resend.emails.send({
       from: "Westminster Chariots <book@mail.westminsterchariots.com>",
-      to: "admin@westminsterchariots.com",
+      to: ["admin@westminsterchariots.com", "westminsterchariots@gmail.com"],
       replyTo: validated.email,
       subject: `New Contact Form: ${validated.firstName} ${validated.lastName}`,
       html,
