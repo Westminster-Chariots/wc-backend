@@ -40,10 +40,19 @@ router.post("/", requireAdmin, async (c) => {
   }
 });
 
-// Get all documents with filters
+// Get all documents with filters (joins with bookings for comprehensive filtering)
 router.get("/", requireAdmin, async (c) => {
   try {
-    const { type, search, clientEmail, limit = "50", offset = "0" } = c.req.query();
+    const { 
+      type, 
+      search, 
+      clientEmail, 
+      bookingId,
+      dateFrom,
+      dateTo,
+      limit = "50", 
+      offset = "0" 
+    } = c.req.query();
     
     let query = db.select().from(documents);
     const conditions = [];
@@ -54,6 +63,10 @@ router.get("/", requireAdmin, async (c) => {
 
     if (clientEmail) {
       conditions.push(eq(documents.clientEmail, clientEmail));
+    }
+
+    if (bookingId) {
+      conditions.push(eq(documents.bookingId, bookingId));
     }
 
     if (search) {
@@ -79,6 +92,29 @@ router.get("/", requireAdmin, async (c) => {
   } catch (error: any) {
     console.error("Get documents error:", error);
     return c.json({ error: error.message || "Failed to fetch documents" }, 500);
+  }
+});
+
+// Check if document exists for booking
+router.get("/check/:bookingId/:type", requireAdmin, async (c) => {
+  try {
+    const { bookingId, type } = c.param();
+    
+    const [existing] = await db
+      .select()
+      .from(documents)
+      .where(
+        and(
+          eq(documents.bookingId, bookingId),
+          eq(documents.documentType, type as any)
+        )
+      )
+      .limit(1);
+
+    return c.json({ exists: !!existing, document: existing || null });
+  } catch (error: any) {
+    console.error("Check document error:", error);
+    return c.json({ error: error.message || "Failed to check document" }, 500);
   }
 });
 
